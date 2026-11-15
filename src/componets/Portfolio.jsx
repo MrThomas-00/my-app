@@ -1,22 +1,38 @@
 "use client";
-import { useLayoutEffect, useRef } from "react";
+
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * بخش نمونه کارها با انیمیشن اسکرول (GSAP + ScrollTrigger)
+ * بخش نمونه کارها: خط زیگزاگی نرم که با اسکرول کشیده می‌شود (GSAP)
  *
  * نصب:  npm i gsap
  *
+ * رنگ‌ها باید در globals.css تعریف شده باشند:
+ *   :root {
+ *     --color-primary: #ADFF2F;
+ *     --color-bg: #161A21;
+ *     --color-secondary: #1F242D;
+ *     --color-surface: #2A313C;
+ *     --color-text: #F2F5F1;
+ *   }
+ *
  * استفاده:
- *   <Portfolio />                        // با داده‌های نمونه
- *   <Portfolio projects={myProjects} />  // با پروژه‌های خودتان
+ *   <Portfolio />
+ *   <Portfolio projects={myProjects} />
  *
  * هر پروژه:
  * { id, title, description, category, tags: [], image?: "/img.jpg", link?: "https://..." }
  */
+
+const AMPLITUDE = 36; // میزان رفت‌وبرگشت خط در دسکتاپ (پیکسل)
+const FADE = 120; // طول محو شدن نوک خط (پیکسل)
+
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 const defaultProjects = [
   {
@@ -58,145 +74,236 @@ const defaultProjects = [
   },
 ];
 
-const placeholderTones = [
-  "bg-stone-200 dark:bg-stone-800",
-  "bg-sky-100 dark:bg-sky-950",
-  "bg-emerald-100 dark:bg-emerald-950",
-  "bg-amber-100 dark:bg-amber-950",
-  "bg-rose-100 dark:bg-rose-950",
-];
-
 export default function Portfolio({
   projects = defaultProjects,
   title = "نمونه کارها",
   subtitle = "بخشی از پروژه‌هایی که با دقت و علاقه ساخته‌ایم.",
 }) {
   const rootRef = useRef(null);
+  const listRef = useRef(null);
+  const [geo, setGeo] = useState({ w: 0, h: 0, nodes: [], d: "" });
 
-  useLayoutEffect(() => {
+  // ۱) اندازه‌گیری: مسیر خط را از روی جای واقعی پروژه‌ها می‌سازد
+  useIsoLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+
+    const measure = () => {
+      const w = list.offsetWidth;
+      const h = list.offsetHeight;
+      const desktop = window.matchMedia("(min-width: 768px)").matches;
+      const cx = desktop ? w / 2 : 14;
+
+      const nodes = Array.from(list.querySelectorAll("[data-item]")).map(
+        (li, i) => ({
+          x: desktop ? cx + (i % 2 === 0 ? -AMPLITUDE : AMPLITUDE) : cx,
+          y: li.offsetTop + li.offsetHeight / 2,
+        })
+      );
+
+      const pts = [{ x: cx, y: 0 }, ...nodes, { x: cx, y: h }];
+      let d = `M ${pts[0].x} ${pts[0].y}`;
+      for (let i = 1; i < pts.length; i++) {
+        const p = pts[i - 1];
+        const q = pts[i];
+        const my = (p.y + q.y) / 2;
+        // منحنی S شکل نرم بین دو نقطه
+        d += ` C ${p.x} ${my}, ${q.x} ${my}, ${q.x} ${q.y}`;
+      }
+
+      setGeo((prev) =>
+        prev.d === d && prev.w === w && prev.h === h ? prev : { w, h, nodes, d }
+      );
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(list);
+    return () => ro.disconnect();
+  }, [projects]);
+
+  // ۲) انیمیشن GSAP
+  useIsoLayoutEffect(() => {
+    if (!geo.h) return;
+
     const ctx = gsap.context(() => {
       const items = gsap.utils.toArray("[data-item]");
-      const progress = "[data-progress]";
 
-      // اگر کاربر انیمیشن را کم‌کرده، همه چیز بدون حرکت نمایش داده می‌شود
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        gsap.set(progress, { scaleY: 1 });
-        gsap.set("[data-content]", { autoAlpha: 1, y: 0 });
-        gsap.set("[data-dot-fill]", { scale: 1 });
+        gsap.set("[data-mask-rect]", { attr: { y: 0 } });
+        gsap.set("[data-content]", { autoAlpha: 1, x: 0, y: 0 });
+        gsap.set("[data-ring]", { attr: { r: 9 } });
+        gsap.set("[data-core]", { attr: { r: 4.5 } });
         return;
       }
 
-      // خط عمودی: همزمان با اسکرول از بالا به پایین کشیده می‌شود
+      // خط: با اسکرول ظاهر می‌شود و نوکش نرم محو است
       gsap.fromTo(
-        progress,
-        { scaleY: 0 },
+        "[data-mask-rect]",
+        { attr: { y: -(geo.h + FADE) } },
         {
-          scaleY: 1,
+          attr: { y: 0 },
           ease: "none",
           scrollTrigger: {
             trigger: "[data-list]",
             start: "top 60%",
-            end: "bottom 60%",
+            end: `bottom+=${FADE} 60%`,
             scrub: true,
           },
         }
       );
 
-      // هر پروژه وقتی نوک خط به آن می‌رسد ظاهر می‌شود
-      // (با اسکرول به بالا، برعکس می‌شود)
-      items.forEach((item) => {
+      // هر پروژه وقتی خط به نقطه‌اش رسید ظاهر می‌شود
+      items.forEach((item, i) => {
         const content = item.querySelector("[data-content]");
-        const dotFill = item.querySelector("[data-dot-fill]");
+        const ring = `[data-ring="${i}"]`;
+        const core = `[data-core="${i}"]`;
 
-        gsap.set(content, { autoAlpha: 0, y: 48 });
-        gsap.set(dotFill, { scale: 0 });
+        gsap.set(content, { autoAlpha: 0, x: i % 2 === 0 ? -40 : 40, y: 32 });
+        gsap.set(ring, { attr: { r: 0 } });
+        gsap.set(core, { attr: { r: 0 } });
 
         gsap
           .timeline({
             paused: true,
             scrollTrigger: {
               trigger: item,
-              start: "top 60%",
+              start: `center+=${FADE / 2} 60%`,
               toggleActions: "play none none reverse",
             },
           })
-          .to(dotFill, { scale: 1, duration: 0.3, ease: "back.out(2)" })
+          .to(ring, { attr: { r: 9 }, duration: 0.35, ease: "back.out(2)" })
+          .to(core, { attr: { r: 4.5 }, duration: 0.3, ease: "back.out(3)" }, "<0.05")
           .to(
             content,
-            { autoAlpha: 1, y: 0, duration: 0.7, ease: "power3.out" },
+            { autoAlpha: 1, x: 0, y: 0, duration: 0.8, ease: "power3.out" },
             "<0.05"
           );
       });
     }, rootRef);
 
     return () => ctx.revert();
-  }, [projects]);
+  }, [geo]);
 
   return (
     <section
       ref={rootRef}
       id="portfolio"
       dir="rtl"
-      className="bg-neutral-50 px-4 py-20 dark:bg-neutral-950 sm:px-6 lg:px-8"
+      className="bg-[var(--color-bg)] px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
     >
       <div className="mx-auto max-w-5xl">
-        <header className="max-w-xl pl-10">
-          <h2 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 sm:text-4xl">
-            {title}
-          </h2>
-          <p className="mt-4 leading-8 text-neutral-600 dark:text-neutral-300">
-            {subtitle}
-          </p>
+        <header className="max-w-xl">
+          <h2 className="text-3xl font-bold sm:text-4xl">{title}</h2>
+          <p className="mt-4 leading-8 opacity-70">{subtitle}</p>
         </header>
 
-        <div data-list className="relative mt-16">
-          {/* مسیر کمرنگ خط (ثابت) */}
-          <div
-            aria-hidden="true"
-            className="absolute bottom-0 left-[5px] top-0 w-[2px] bg-neutral-200 dark:bg-neutral-800"
-          />
-          {/* خطی که با اسکرول کشیده می‌شود */}
-          <div
-            data-progress
-            aria-hidden="true"
-            className="absolute bottom-0 left-[5px] top-0 w-[2px] origin-top bg-neutral-400 dark:bg-neutral-500"
-          />
+        <div ref={listRef} data-list className="relative mt-16">
+          {geo.h > 0 && (
+            <svg
+              aria-hidden="true"
+              className="pointer-events-none absolute left-0 top-0 z-0"
+              width={geo.w}
+              height={geo.h}
+              viewBox={`0 0 ${geo.w} ${geo.h}`}
+              fill="none"
+            >
+              <defs>
+                {/* محو شدن ابتدا و انتهای خط */}
+                <linearGradient
+                  id="pf-fade"
+                  gradientUnits="userSpaceOnUse"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2={geo.h}
+                >
+                  <stop offset="0" style={{ stopColor: "var(--color-primary)", stopOpacity: 0 }} />
+                  <stop offset="0.08" style={{ stopColor: "var(--color-primary)", stopOpacity: 0.6 }} />
+                  <stop offset="0.92" style={{ stopColor: "var(--color-primary)", stopOpacity: 0.6 }} />
+                  <stop offset="1" style={{ stopColor: "var(--color-primary)", stopOpacity: 0 }} />
+                </linearGradient>
 
-          <ul>
+                {/* ماسک ظاهر شدن خط با اسکرول (لبه‌ی پایینی نرم) */}
+                <linearGradient id="pf-reveal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#fff" />
+                  <stop offset={geo.h / (geo.h + FADE)} stopColor="#fff" />
+                  <stop offset="1" stopColor="#000" />
+                </linearGradient>
+                <mask
+                  id="pf-mask"
+                  maskUnits="userSpaceOnUse"
+                  x="-60"
+                  y="0"
+                  width={geo.w + 120}
+                  height={geo.h}
+                >
+                  <rect
+                    data-mask-rect
+                    x="-60"
+                    y={-(geo.h + FADE)}
+                    width={geo.w + 120}
+                    height={geo.h + FADE}
+                    fill="url(#pf-reveal)"
+                  />
+                </mask>
+              </defs>
+
+              <g mask="url(#pf-mask)" strokeLinecap="round" strokeLinejoin="round">
+                <path d={geo.d} stroke="url(#pf-fade)" strokeWidth="12" opacity="0.1" />
+                <path d={geo.d} stroke="url(#pf-fade)" strokeWidth="5" opacity="0.2" />
+                <path d={geo.d} stroke="url(#pf-fade)" strokeWidth="1.5" />
+              </g>
+
+              {geo.nodes.map((n, i) => (
+                <g key={i}>
+                  <circle
+                    data-ring={i}
+                    cx={n.x}
+                    cy={n.y}
+                    r="0"
+                    strokeWidth="2"
+                    style={{ fill: "var(--color-bg)", stroke: "var(--color-surface)" }}
+                  />
+                  <circle
+                    data-core={i}
+                    cx={n.x}
+                    cy={n.y}
+                    r="0"
+                    style={{ fill: "var(--color-primary)" }}
+                  />
+                </g>
+              ))}
+            </svg>
+          )}
+
+          <ul className="relative z-10">
             {projects.map((project, i) => {
               const { title, description, category, tags = [], image, link } =
                 project;
-              const tone = placeholderTones[i % placeholderTones.length];
+              const imageOnLeft = i % 2 === 0; // یکی در میان چپ و راست
 
               return (
                 <li
                   key={project.id}
                   data-item
-                  className="relative py-12 pl-10 md:py-20 md:pl-16"
+                  className="py-14 pl-11 md:py-24 md:pl-0"
                 >
-                  {/* نقطه روی خط */}
-                  <span
-                    aria-hidden="true"
-                    className="absolute left-0 top-14 flex h-3 w-3 items-center justify-center rounded-full border-2 border-neutral-300 bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-950 md:top-[5.5rem]"
-                  >
-                    <span
-                      data-dot-fill
-                      className="h-1.5 w-1.5 rounded-full bg-neutral-900 dark:bg-white"
-                    />
-                  </span>
-
                   <article
                     data-content
-                    className="grid items-center gap-8 md:grid-cols-2"
+                    className="grid items-center gap-8 md:grid-cols-2 md:gap-x-28"
                   >
-                    <div className="order-2 md:order-1">
-                      <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                        {category}
-                      </span>
-                      <h3 className="mt-2 text-2xl font-bold leading-snug text-neutral-900 dark:text-neutral-50">
+                    {/* متن */}
+                    <div
+                      className={`order-2 ${
+                        imageOnLeft ? "md:order-1" : "md:order-2"
+                      }`}
+                    >
+                      <span className="text-sm opacity-60">{category}</span>
+                      <h3 className="mt-2 text-2xl font-bold leading-snug">
                         {title}
                       </h3>
-                      <p className="mt-3 max-w-md leading-8 text-neutral-600 dark:text-neutral-300">
+                      <p className="mt-3 max-w-md leading-8 opacity-70">
                         {description}
                       </p>
 
@@ -205,7 +312,7 @@ export default function Portfolio({
                           {tags.map((tag) => (
                             <li
                               key={tag}
-                              className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 dark:border-neutral-700 dark:text-neutral-300"
+                              className="rounded-full border border-[var(--color-surface)] bg-[var(--color-secondary)] px-3 py-1 text-xs"
                             >
                               {tag}
                             </li>
@@ -218,15 +325,18 @@ export default function Portfolio({
                           href={link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-6 inline-block rounded-full bg-neutral-900 px-5 py-2.5 text-sm text-white transition-colors hover:bg-neutral-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 dark:focus-visible:ring-white dark:focus-visible:ring-offset-neutral-950"
+                          className="mt-6 inline-block rounded-full bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-bg)] transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
                         >
                           مشاهده پروژه
                         </a>
                       )}
                     </div>
 
+                    {/* تصویر */}
                     <div
-                      className={`order-1 aspect-[4/3] overflow-hidden rounded-2xl md:order-2 ${tone}`}
+                      className={`order-1 aspect-[4/3] overflow-hidden rounded-2xl border border-[var(--color-surface)] bg-[var(--color-secondary)] ${
+                        imageOnLeft ? "md:order-2" : "md:order-1"
+                      }`}
                     >
                       {image ? (
                         <img
@@ -237,7 +347,7 @@ export default function Portfolio({
                         />
                       ) : (
                         <div className="flex h-full items-end p-5">
-                          <span className="text-6xl font-bold text-black/10 dark:text-white/10">
+                          <span className="text-7xl font-bold text-[var(--color-surface)]">
                             {title.slice(0, 1)}
                           </span>
                         </div>
