@@ -68,17 +68,25 @@ export default function Portfolio({
 }) {
   const rootRef = useRef(null);
   const listRef = useRef(null);
-  const [geo, setGeo] = useState({ w: 0, h: 0, nodes: [], d: "" });
+  // h: ارتفاع لیست | H: ارتفاع تا ته سکشن (خط تا لبه‌ی سکشن بعدی ادامه دارد)
+  // jx: مختصات افقی نقطه‌ی اتصال خط عمودی به خط افقی پایین سکشن
+  const [geo, setGeo] = useState({ w: 0, h: 0, H: 0, jx: 0, extra: 0, nodes: [], d: "" });
 
   useIsoLayoutEffect(() => {
     const list = listRef.current;
-    if (!list) return;
+    const root = rootRef.current;
+    if (!list || !root) return;
 
     const measure = () => {
       const w = list.offsetWidth;
       const h = list.offsetHeight;
+      const lr = list.getBoundingClientRect();
+      const rr = root.getBoundingClientRect();
+      const extra = Math.max(0, Math.round(rr.bottom - lr.bottom));
+      const H = h + extra;
       const desktop = window.matchMedia("(min-width: 768px)").matches;
       const cx = desktop ? w / 2 : 14;
+      const jx = Math.round(lr.left - rr.left + cx);
 
       const nodes = Array.from(list.querySelectorAll("[data-item]")).map(
         (li, i) => ({
@@ -87,7 +95,7 @@ export default function Portfolio({
         })
       );
 
-      const pts = [{ x: cx, y: 0 }, ...nodes, { x: cx, y: h }];
+      const pts = [{ x: cx, y: 0 }, ...nodes, { x: cx, y: H }];
       let d = `M ${pts[0].x} ${pts[0].y}`;
       for (let i = 1; i < pts.length; i++) {
         const p = pts[i - 1];
@@ -97,7 +105,13 @@ export default function Portfolio({
       }
 
       setGeo((prev) =>
-        prev.d === d && prev.w === w && prev.h === h ? prev : { w, h, nodes, d }
+        prev.d === d &&
+        prev.w === w &&
+        prev.h === h &&
+        prev.H === H &&
+        prev.jx === jx
+          ? prev
+          : { w, h, H, jx, extra, nodes, d }
       );
     };
 
@@ -118,20 +132,39 @@ export default function Portfolio({
         gsap.set("[data-content]", { autoAlpha: 1, x: 0, y: 0 });
         gsap.set("[data-ring]", { attr: { r: 9 } });
         gsap.set("[data-core]", { attr: { r: 4.5 } });
+        gsap.set("[data-junction]", { scaleX: 1 });
         return;
       }
 
+      // خط عمودی: با اسکرول تا لبه‌ی سکشن بعدی کشیده می‌شود
       gsap.fromTo(
         "[data-mask-rect]",
-        { attr: { y: -(geo.h + FADE) } },
+        { attr: { y: -(geo.H + FADE) } },
         {
           attr: { y: 0 },
           ease: "none",
           scrollTrigger: {
             trigger: "[data-list]",
             start: "top 60%",
-            end: `bottom+=${FADE} 60%`,
+            end: `bottom+=${geo.extra + FADE} 60%`,
             scrub: true,
+          },
+        }
+      );
+
+      // خط افقی پایین سکشن: وقتی خط عمودی رسید، از نقطه‌ی اتصال به چپ و راست پر می‌شود
+      gsap.fromTo(
+        "[data-junction]",
+        { scaleX: 0, transformOrigin: `${geo.jx}px 50%` },
+        {
+          scaleX: 1,
+          duration: 0.9,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: "[data-junction]",
+            start: () => `top ${window.innerHeight * 0.6 - FADE / 2}px`,
+            toggleActions: "play none none reverse",
+            invalidateOnRefresh: true,
           },
         }
       );
@@ -193,7 +226,7 @@ export default function Portfolio({
       {/* نور لیمویی جمع‌وجور گوشه‌ی بالا سمت راست (اندازه‌ی ثابت، مستقل از ارتفاع سکشن) */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-58 -top-58 -z-10 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary)_15%,transparent),transparent_70%)] md:h-[45rem] md:w-[45rem]"
+        className="pointer-events-none absolute -right-28 -top-28 -z-10 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary)_20%,transparent),transparent_70%)] md:h-[26rem] md:w-[26rem]"
       />
 
       <div className="mx-auto max-w-5xl">
@@ -208,28 +241,28 @@ export default function Portfolio({
               aria-hidden="true"
               className="pointer-events-none absolute left-0 top-0 z-0"
               width={geo.w}
-              height={geo.h}
-              viewBox={`0 0 ${geo.w} ${geo.h}`}
+              height={geo.H}
+              viewBox={`0 0 ${geo.w} ${geo.H}`}
               fill="none"
             >
               <defs>
+                {/* ابتدای خط محو می‌شود؛ انتها پررنگ می‌ماند تا به خط افقی برسد */}
                 <linearGradient
                   id="pf-fade"
                   gradientUnits="userSpaceOnUse"
                   x1="0"
                   y1="0"
                   x2="0"
-                  y2={geo.h}
+                  y2={geo.H}
                 >
                   <stop offset="0" style={{ stopColor: "var(--color-primary)", stopOpacity: 0 }} />
-                  <stop offset="0.08" style={{ stopColor: "var(--color-primary)", stopOpacity: 0.6 }} />
-                  <stop offset="0.92" style={{ stopColor: "var(--color-primary)", stopOpacity: 0.6 }} />
-                  <stop offset="1" style={{ stopColor: "var(--color-primary)", stopOpacity: 0 }} />
+                  <stop offset="0.06" style={{ stopColor: "var(--color-primary)", stopOpacity: 0.6 }} />
+                  <stop offset="1" style={{ stopColor: "var(--color-primary)", stopOpacity: 0.6 }} />
                 </linearGradient>
 
                 <linearGradient id="pf-reveal" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0" stopColor="#fff" />
-                  <stop offset={geo.h / (geo.h + FADE)} stopColor="#fff" />
+                  <stop offset={geo.H / (geo.H + FADE)} stopColor="#fff" />
                   <stop offset="1" stopColor="#000" />
                 </linearGradient>
                 <mask
@@ -238,14 +271,14 @@ export default function Portfolio({
                   x="-60"
                   y="0"
                   width={geo.w + 120}
-                  height={geo.h}
+                  height={geo.H}
                 >
                   <rect
                     data-mask-rect
                     x="-60"
-                    y={-(geo.h + FADE)}
+                    y={-(geo.H + FADE)}
                     width={geo.w + 120}
-                    height={geo.h + FADE}
+                    height={geo.H + FADE}
                     fill="url(#pf-reveal)"
                   />
                 </mask>
@@ -360,6 +393,14 @@ export default function Portfolio({
           </ul>
         </div>
       </div>
+
+      {/* خط اتصال به سکشن بعدی: خط عمودی به اینجا می‌چسبد و از وسط به چپ و راست پر می‌شود */}
+      <div
+        aria-hidden="true"
+        data-junction
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[2px] bg-[linear-gradient(90deg,transparent,var(--color-primary)_8%,var(--color-primary)_92%,transparent)] opacity-70 [box-shadow:0_-2px_14px_1px_color-mix(in_srgb,var(--color-primary)_35%,transparent)]"
+        style={{ transform: "scaleX(0)", transformOrigin: `${geo.jx}px 50%` }}
+      />
     </section>
   );
 }
