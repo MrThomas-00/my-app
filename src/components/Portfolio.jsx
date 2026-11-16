@@ -226,7 +226,7 @@ export default function Portfolio({
 
       <div className="mx-auto max-w-5xl">
         <header className="max-w-xl">
-          <h2 className="text-3xl font-bold sm:text-4xl">{title}</h2>
+          <h2 className="text-3xl font-bold sm:text-4xl justify-self-center text-center">{title}</h2>
           <p className="mt-4 leading-8 opacity-70">{subtitle}</p>
         </header>
 
@@ -388,7 +388,6 @@ export default function Portfolio({
         </div>
       </div>
 
-      {/* خط اتصال به سکشن بعدی: خط عمودی به اینجا می‌چسبد و از وسط به چپ و راست پر می‌شود */}
       <div
         aria-hidden="true"
         data-junction

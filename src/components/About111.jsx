@@ -48,14 +48,13 @@ const defaultMembers = [
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// پیل‌های تگ: توخالی ← کم‌رنگ ← پر (مثل پالت تم)
 const tagStyles = [
   "border-[var(--color-primary)] text-[var(--color-primary)]",
   "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_14%,transparent)]",
   "border-[var(--color-primary)] bg-[var(--color-primary)] font-semibold text-[var(--color-bg)]",
 ];
 
-// شعاع گوشه‌ها و حالت تغییر شکل هر باکس (ابتدا / هاور)
+
 const radii = [
   "rounded-[2.5rem_1rem_2.5rem_2.5rem] hover:rounded-[1rem_2.5rem_2.5rem_2.5rem]",
   "rounded-[1rem_2.5rem_2.5rem_2.5rem] hover:rounded-[2.5rem_1rem_2.5rem_2.5rem]",
