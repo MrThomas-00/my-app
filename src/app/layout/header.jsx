@@ -7,19 +7,77 @@ import { flushSync } from 'react-dom'
 import gsap from 'gsap'
 
 const navLinks = [
-  { label: 'خانه', path: '/' },
-  { label: 'درباره ما', path: '/about' },
-  { label: 'وبلاگ', path: '/blog' },
-  { label: 'پروژه‌ها', path: '/projects' },
+  { label: 'خانه', path: '/', icon: 'home' },
+  { label: 'درباره ما', path: '/about', icon: 'users' },
+  { label: 'وبلاگ', path: '/blog', icon: 'edit' },
+  { label: 'پروژه‌ها', path: '/projects', icon: 'layers' },
 ]
 
 const CONTACT_PATH = '/contact'
 
+// آیکون‌های خطی (سبک Feather)، بدون وابستگی اضافه
+const ICONS = {
+  home: (
+    <>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M9 22V12h6v10" />
+    </>
+  ),
+  users: (
+    <>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </>
+  ),
+  edit: (
+    <>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </>
+  ),
+  layers: (
+    <>
+      <path d="M12 2 2 7l10 5 10-5-10-5z" />
+      <path d="m2 17 10 5 10-5" />
+      <path d="m2 12 10 5 10-5" />
+    </>
+  ),
+  mail: (
+    <>
+      <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+      <path d="m22 6-10 7L2 6" />
+    </>
+  ),
+}
+
+function NavIcon({ name, size = 18, className = '' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`shrink-0 transition-colors duration-300 ${className}`}
+    >
+      {ICONS[name]}
+    </svg>
+  )
+}
+
 const prefersReduced = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+// چقدر بوردر بعد از گوشه‌ی گرد، روی لبه‌ی عمودی ادامه پیدا کنه (۰ تا ۱ از بخش صاف لبه)
 const TAIL = 0.5
 
+// حلقه‌ی گرادیانی ۱.۵ پیکسلی که دقیقاً شکل قرص رو دنبال می‌کنه (پایین سبز، بالا محو)
 const PILL_RING = {
   padding: 1.5,
   background: 'linear-gradient(to top, var(--color-primary), var(--color-border) 55%, transparent)',
@@ -40,6 +98,7 @@ const getInitialTheme = () => {
 const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]'
 
+/* ───────────── دکمه‌ی دارک/لایت: آیکون ماه و خورشید با GSAP جابه‌جا می‌شن ───────────── */
 function ThemeToggle({ theme, onToggle, ...rest }) {
   const sunRef = useRef(null)
   const moonRef = useRef(null)
@@ -108,9 +167,16 @@ export default function Header() {
 
   const headerRef = useRef(null)
   const panelRef = useRef(null)
-  const topPathRef = useRef(null)
-  const bottomPathRef = useRef(null)
-  const pathInfo = useRef({ topLen: 0, bottomLen: 0 })
+  // هر بوردر دو تکه‌ست: A = قسمت صاف، B = گوشه‌ی گرد + دنباله‌ی عمودی (که فید می‌شه)
+  const topARef = useRef(null)
+  const topBRef = useRef(null)
+  const botARef = useRef(null)
+  const botBRef = useRef(null)
+  const gTopA = useRef(null)
+  const gTopB = useRef(null)
+  const gBotA = useRef(null)
+  const gBotB = useRef(null)
+  const pathInfo = useRef({ topA: 0, topB: 0, botA: 0, botB: 0 })
   const progress = useRef({ top: 0, bottom: 0 })
   const scrollTl = useRef(null)
 
@@ -123,11 +189,13 @@ export default function Header() {
 
   const activeIndex = navLinks.findIndex((l) => isPathActive(pathname, l.path))
 
+  /* ───────────── تم ───────────── */
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     try {
       localStorage.setItem('theme', theme)
     } catch {
+      /* ignore */
     }
   }, [theme])
 
@@ -143,6 +211,7 @@ export default function Header() {
       return
     }
 
+    // دایره‌ای از وسط دکمه باز می‌شه و تم جدید رو نشون می‌ده
     const rect = e.currentTarget.getBoundingClientRect()
     const x = rect.left + rect.width / 2
     const y = rect.top + rect.height / 2
@@ -156,6 +225,7 @@ export default function Header() {
     })
   }
 
+  /* ───────────── اسکرول ───────────── */
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 0)
     handleScroll()
@@ -180,6 +250,7 @@ export default function Header() {
     setIsOpen(false)
   }, [pathname])
 
+  /* ───────────── GSAP: ورود اولیه‌ی هدر (از راست به چپ پشت سر هم) ───────────── */
   useLayoutEffect(() => {
     if (prefersReduced()) return
     const ctx = gsap.context(() => {
@@ -196,42 +267,70 @@ export default function Header() {
     return () => ctx.revert()
   }, [])
 
+  /* ───────────── GSAP: بوردرها (مسیر SVG که گوشه‌ی گرد هدر رو دنبال می‌کنه و نوکش فید می‌شه) ───────────── */
   const applyDash = useCallback(() => {
-    const items = [
-      [topPathRef.current, pathInfo.current.topLen, progress.current.top],
-      [bottomPathRef.current, pathInfo.current.bottomLen, progress.current.bottom],
-    ]
-    items.forEach(([path, len, p]) => {
+    const info = pathInfo.current
+    const paint = (path, len, drawn) => {
       if (!path) return
+      path.style.opacity = drawn > 0.05 ? '1' : '0' // سر گرد خط وقتی هنوز شروع نشده دیده نشه
       path.style.strokeDasharray = `${len} ${len * 2 + 10}`
-      path.style.strokeDashoffset = `${(len + 2) * (1 - p)}`
-    })
+      path.style.strokeDashoffset = `${len - drawn}`
+    }
+    // پیشرفت (۰ تا ۱) روی مجموع طول دو تکه پخش می‌شه
+    const dTop = progress.current.top * (info.topA + info.topB)
+    const dBot = progress.current.bottom * (info.botA + info.botB)
+    paint(topARef.current, info.topA, Math.min(dTop, info.topA))
+    paint(topBRef.current, info.topB, Math.max(0, dTop - info.topA))
+    paint(botARef.current, info.botA, Math.min(dBot, info.botA))
+    paint(botBRef.current, info.botB, Math.max(0, dBot - info.botA))
   }, [])
 
   const drawGeometry = useCallback(() => {
     const header = headerRef.current
     const panel = panelRef.current
-    const top = topPathRef.current
-    const bottom = bottomPathRef.current
-    if (!header || !panel || !top || !bottom) return
+    const paths = [topARef, topBRef, botARef, botBRef].map((r) => r.current)
+    const grads = [gTopA, gTopB, gBotA, gBotB].map((r) => r.current)
+    if (!header || !panel || paths.some((x) => !x) || grads.some((x) => !x)) return
+    const [topA, topB, botA, botB] = paths
 
     const w = header.offsetWidth
     const h = header.offsetHeight
-    const cssRadius = parseFloat(getComputedStyle(panel).borderTopLeftRadius) || 16
+    const cssRadius = parseFloat(getComputedStyle(panel).borderTopLeftRadius) || 16 // همون radius پنل
     const r = Math.min(cssRadius, w / 2, h / 2)
     const tail = Math.max(0, (h - 2 * r) * TAIL)
 
-    top.setAttribute('d', `M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} v ${tail}`)
-    bottom.setAttribute('d', `M ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} v ${-tail}`)
+    // بالا: از چپ به راست، بعد دور گوشه‌ی بالا-راست می‌پیچه و کمی میاد پایین
+    topA.setAttribute('d', `M ${r} 0 H ${w - r}`)
+    topB.setAttribute('d', `M ${w - r} 0 A ${r} ${r} 0 0 1 ${w} ${r} v ${tail}`)
+    // پایین: از راست به چپ، بعد دور گوشه‌ی پایین-چپ می‌پیچه و کمی میره بالا
+    botA.setAttribute('d', `M ${w - r} ${h} H ${r}`)
+    botB.setAttribute('d', `M ${r} ${h} A ${r} ${r} 0 0 1 0 ${h - r} v ${-tail}`)
 
-    pathInfo.current = { topLen: top.getTotalLength(), bottomLen: bottom.getTotalLength() }
+    // گرادیان‌ها: تکه‌ی صاف افقی، تکه‌ی گوشه عمودی (تا نوک تدریجی محو بشه)
+    const setGrad = (g, x1, y1, x2, y2) => {
+      g.setAttribute('x1', x1)
+      g.setAttribute('y1', y1)
+      g.setAttribute('x2', x2)
+      g.setAttribute('y2', y2)
+    }
+    setGrad(grads[0], r, 0, w - r, 0)
+    setGrad(grads[1], 0, 0, 0, r + tail)
+    setGrad(grads[2], w - r, 0, r, 0)
+    setGrad(grads[3], 0, h, 0, h - r - tail)
+
+    pathInfo.current = {
+      topA: topA.getTotalLength(),
+      topB: topB.getTotalLength(),
+      botA: botA.getTotalLength(),
+      botB: botB.getTotalLength(),
+    }
     applyDash()
   }, [applyDash])
 
   useLayoutEffect(() => {
     progress.current = { top: 0, bottom: 0 }
 
-    const ro = new ResizeObserver(drawGeometry)
+    const ro = new ResizeObserver(drawGeometry) // عرض/ارتفاع هدر موقع اسکرول عوض می‌شه
     ro.observe(headerRef.current)
     drawGeometry()
 
@@ -260,6 +359,7 @@ export default function Header() {
     else tl.reverse()
   }, [isScrolled])
 
+  /* ───────────── GSAP: قرص متحرک زیر لینک‌ها (دنبال موس می‌ره، برمی‌گرده سر لینک فعال) ───────────── */
   const movePill = useCallback((index, instant = false) => {
     const pill = pillRef.current
     if (!pill) return
@@ -283,10 +383,11 @@ export default function Header() {
     placedOnce.current = true
     const onResize = () => movePill(activeIndex, true)
     window.addEventListener('resize', onResize)
-    document.fonts?.ready.then(onResize)
+    document.fonts?.ready.then(onResize) // بعد از لود شدن Lalezar عرض‌ها عوض می‌شه
     return () => window.removeEventListener('resize', onResize)
   }, [activeIndex, movePill])
 
+  /* ───────────── GSAP: دکمه‌ی تماس با ما کمی دنبال موس می‌کشه (magnetic) ───────────── */
   useLayoutEffect(() => {
     const el = contactRef.current
     const wrap = contactWrapRef.current
@@ -337,26 +438,40 @@ export default function Header() {
           isScrolled ? 'md:mt-4 md:w-[85%]' : ''
         }`}
       >
+        {/* شیشه‌ی پشت هدر (با GSAP ظاهر می‌شه) */}
         <div
           ref={panelRef}
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 rounded-2xl bg-[color-mix(in_srgb,var(--color-bg)_70%,transparent)] opacity-0 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.55)] backdrop-blur-xl"
         />
+        {/* بوردر بالا: از چپ به راست */}
         <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
           <defs>
-            <linearGradient id="siryx-line-top" x1="0" y1="0" x2="1" y2="0">
+            <linearGradient ref={gTopA} id="siryx-top-a" gradientUnits="userSpaceOnUse">
               <stop offset="0" style={{ stopColor: 'var(--color-border)', stopOpacity: 0 }} />
               <stop offset="0.25" style={{ stopColor: 'var(--color-border)' }} />
               <stop offset="1" style={{ stopColor: 'var(--color-primary)' }} />
             </linearGradient>
-            <linearGradient id="siryx-line-bottom" x1="1" y1="0" x2="0" y2="0">
+            <linearGradient ref={gTopB} id="siryx-top-b" gradientUnits="userSpaceOnUse">
+              <stop offset="0" style={{ stopColor: 'var(--color-primary)' }} />
+              <stop offset="0.3" style={{ stopColor: 'var(--color-primary)' }} />
+              <stop offset="1" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0 }} />
+            </linearGradient>
+            <linearGradient ref={gBotA} id="siryx-bottom-a" gradientUnits="userSpaceOnUse">
               <stop offset="0" style={{ stopColor: 'var(--color-border)', stopOpacity: 0 }} />
               <stop offset="0.25" style={{ stopColor: 'var(--color-border)' }} />
               <stop offset="1" style={{ stopColor: 'var(--color-primary)' }} />
+            </linearGradient>
+            <linearGradient ref={gBotB} id="siryx-bottom-b" gradientUnits="userSpaceOnUse">
+              <stop offset="0" style={{ stopColor: 'var(--color-primary)' }} />
+              <stop offset="0.3" style={{ stopColor: 'var(--color-primary)' }} />
+              <stop offset="1" style={{ stopColor: 'var(--color-primary)', stopOpacity: 0 }} />
             </linearGradient>
           </defs>
-          <path ref={topPathRef} fill="none" stroke="url(#siryx-line-top)" strokeWidth="1.5" strokeLinecap="round" />
-          <path ref={bottomPathRef} fill="none" stroke="url(#siryx-line-bottom)" strokeWidth="1.5" strokeLinecap="round" />
+          <path ref={topARef} fill="none" stroke="url(#siryx-top-a)" strokeWidth="1.5" strokeLinecap="round" />
+          <path ref={topBRef} fill="none" stroke="url(#siryx-top-b)" strokeWidth="1.5" strokeLinecap="round" />
+          <path ref={botARef} fill="none" stroke="url(#siryx-bottom-a)" strokeWidth="1.5" strokeLinecap="round" />
+          <path ref={botBRef} fill="none" stroke="url(#siryx-bottom-b)" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
 
         <nav
@@ -395,10 +510,18 @@ export default function Header() {
                       aria-current={isActive ? 'page' : undefined}
                       onMouseEnter={() => movePill(i)}
                       onFocus={() => movePill(i)}
-                      className={`relative z-10 block rounded-full px-5 py-2 text-base transition-colors duration-300 hover:text-[var(--color-text)] ${focusRing} ${
+                      className={`group relative z-10 flex items-center gap-2 rounded-full px-5 py-2 text-base transition-colors duration-300 hover:text-[var(--color-text)] ${focusRing} ${
                         isActive ? 'text-[var(--color-text)]' : 'text-[var(--color-muted)]'
                       }`}
                     >
+                      <NavIcon
+                        name={item.icon}
+                        className={
+                          isActive
+                            ? 'text-[var(--color-primary)]'
+                            : 'text-[var(--color-muted)] group-hover:text-[var(--color-text)]'
+                        }
+                      />
                       {item.label}
                     </Link>
                   </li>
@@ -412,8 +535,9 @@ export default function Header() {
               <Link
                 ref={contactRef}
                 href={CONTACT_PATH}
-                className={`block rounded-full bg-[var(--color-primary)] px-6 py-2 text-base text-[var(--color-on-primary)] shadow-[0_0_24px_var(--color-glow)] transition-[box-shadow,filter] duration-300 hover:shadow-[0_0_32px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] hover:brightness-110 ${focusRing}`}
+                className={`flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-6 py-2 text-base text-[var(--color-on-primary)] shadow-[0_0_24px_var(--color-glow)] transition-[box-shadow,filter] duration-300 hover:shadow-[0_0_32px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] hover:brightness-110 ${focusRing}`}
               >
+                <NavIcon name="mail" />
                 تماس با ما
               </Link>
             </div>
@@ -439,6 +563,7 @@ export default function Header() {
         </nav>
       </header>
 
+      {/* ───────────── منوی موبایل ───────────── */}
       <div
         id="mobile-menu"
         dir="rtl"
@@ -486,11 +611,16 @@ export default function Header() {
                 href={item.path}
                 onClick={() => setIsOpen(false)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`border-b border-[var(--color-border)] py-5 text-3xl transition-all duration-300 ${
+                className={`flex items-center gap-4 border-b border-[var(--color-border)] py-5 text-3xl transition-all duration-300 ${
                   isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text)]'
                 } ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}
                 style={{ transitionDelay: isOpen ? `${i * 50}ms` : '0ms' }}
               >
+                <NavIcon
+                  name={item.icon}
+                  size={26}
+                  className={isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-muted)]'}
+                />
                 {item.label}
               </Link>
             )
@@ -500,8 +630,9 @@ export default function Header() {
         <Link
           href={CONTACT_PATH}
           onClick={() => setIsOpen(false)}
-          className="relative mb-6 mt-auto block rounded-full bg-[var(--color-primary)] py-3.5 text-center text-lg text-[var(--color-on-primary)] shadow-[0_0_24px_var(--color-glow)]"
+          className="relative mb-6 mt-auto flex items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-3.5 text-center text-lg text-[var(--color-on-primary)] shadow-[0_0_24px_var(--color-glow)]"
         >
+          <NavIcon name="mail" size={20} />
           تماس با ما
         </Link>
       </div>
