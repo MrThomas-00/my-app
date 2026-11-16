@@ -7,12 +7,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * سکشن «درباره ما» — طرح شبکه‌ای با هاب مرکزی
+ * سکشن «درباره ما» — هاب مرکزی SIRYX + چهار باکس
  *
- * وسط: باکس تیم (SIRYX) + توضیحات
- * بالا: دو عضو تیم
- * پایین: دو باکس درباره‌ی نحوه‌ی کار تیم (قابل ویرایش)
- * خطوط سبز منحنی از وسط به هر باکس وصل می‌شوند و با اسکرول کشیده می‌شوند.
+ * - بدون نقطه؛ خطوط سبز با گرادیانِ محو شونده‌ی دو سر، فید‌این و یک پالس نوریِ متحرک
+ * - ذرات ریز نورانی (کانواس) که تصادفی از دور باکس‌ها بیرون می‌زنند و محو می‌شوند
  *
  * رنگ‌ها در globals.css:
  *   --color-primary / --color-bg / --color-secondary / --color-surface / --color-text
@@ -20,10 +18,9 @@ gsap.registerPlugin(ScrollTrigger);
 
 const defaultTeam = {
   name: "SIRYX",
-  tagline: "استودیوی کوچک، با استانداردهای بزرگ.",
+  tagline: "دو نفر، یک استودیو.",
   description:
-    "SIRYX یک تیم دو نفره‌ست که طراحی و توسعه رو کنار هم جلو می‌بره. ما ایده رو از اسکچ تا نسخه‌ی نهایی با هم می‌سازیم تا نتیجه هم سریع باشه، هم تمیز و هم دقیقاً چیزی که لازم داشتید.",
-  facts: ["طراحی + توسعه", "تحویل مرحله‌ای", "ارتباط مستقیم"],
+    "طراحی و توسعه رو کنار هم جلو می‌بریم؛ از اسکچ تا نسخه‌ی نهایی.",
 };
 
 const defaultMembers = [
@@ -66,7 +63,9 @@ const tagStyles = [
 ];
 
 const boxBase =
-  "relative bg-[var(--color-secondary)] p-7 shadow-[0_0_0_1px_var(--color-surface),0_0_0_7px_var(--color-bg),0_0_0_8px_var(--color-surface)] transition-[border-radius,box-shadow] duration-500 hover:shadow-[0_0_0_1px_var(--color-primary),0_0_0_7px_var(--color-bg),0_0_0_8px_var(--color-primary),0_0_60px_-14px_var(--color-primary)]";
+  "relative h-full bg-[var(--color-secondary)] p-7 shadow-[0_0_0_1px_var(--color-surface),0_0_0_7px_var(--color-bg),0_0_0_8px_var(--color-surface)] transition-[border-radius,box-shadow] duration-500 hover:shadow-[0_0_0_1px_var(--color-primary),0_0_0_7px_var(--color-bg),0_0_0_8px_var(--color-primary),0_0_60px_-14px_var(--color-primary)]";
+
+const PAD = 90; // حاشیه‌ی اضافه‌ی کانواس تا نور بیرون‌زده بریده نشود
 
 export default function About({
   team = defaultTeam,
@@ -77,57 +76,52 @@ export default function About({
   const rootRef = useRef(null);
   const gridRef = useRef(null);
   const hubRef = useRef(null);
+  const canvasRef = useRef(null);
   const nodeRefs = useRef([]); // [TL, TR, BL, BR]
+  const boxesRef = useRef([]); // مستطیل همه‌ی باکس‌ها نسبت به گرید
+  const sizeRef = useRef({ w: 0, h: 0 });
   const [paths, setPaths] = useState([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
-  // مسیر منحنی از لبه‌ی هر باکس به لبه‌ی هاب
   const measure = useCallback(() => {
     const grid = gridRef.current;
     const hub = hubRef.current;
     if (!grid || !hub) return;
+
+    const g = grid.getBoundingClientRect();
+    const rel = (el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left - g.left, y: r.top - g.top, w: r.width, h: r.height };
+    };
+
+    const hubR = rel(hub);
+    const cardRs = nodeRefs.current.map((el) => (el ? rel(el) : null));
+    boxesRef.current = [hubR, ...cardRs.filter(Boolean)];
+    sizeRef.current = { w: g.width, h: g.height };
+    setSize({ w: g.width, h: g.height });
 
     if (!window.matchMedia("(min-width: 768px)").matches) {
       setPaths([]);
       return;
     }
 
-    const g = grid.getBoundingClientRect();
-    const h = hub.getBoundingClientRect();
-    const hx = h.left - g.left;
-    const hy = h.top - g.top;
-
     // نقطه‌ی اتصال روی هاب: [سمت، درصد ارتفاع]
-    const anchors = [
-      ["l", 0.25],
-      ["r", 0.25],
-      ["l", 0.75],
-      ["r", 0.75],
-    ];
+    const anchors = [["l", 0.32], ["r", 0.32], ["l", 0.68], ["r", 0.68]];
 
-    const next = nodeRefs.current.map((el, i) => {
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
+    const next = cardRs.map((r, i) => {
+      if (!r) return null;
       const [side, p] = anchors[i];
-      const isLeftBox = i % 2 === 0;
-
-      const x1 = (isLeftBox ? r.right : r.left) - g.left;
-      const y1 = r.top - g.top + r.height * 0.5;
-      const x2 = side === "l" ? hx : hx + h.width;
-      const y2 = hy + h.height * p;
+      const fromLeftBox = i % 2 === 0;
+      // ابتدا و انتهای خط کمی زیر باکس‌ها می‌رود (باکس‌ها روی SVG هستند)
+      const x1 = fromLeftBox ? r.x + r.w - 14 : r.x + 14;
+      const y1 = r.y + r.h / 2;
+      const x2 = side === "l" ? hubR.x + 14 : hubR.x + hubR.w - 14;
+      const y2 = hubR.y + hubR.h * p;
       const mx = (x1 + x2) / 2;
-
-      return {
-        d: `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`,
-        x1,
-        y1,
-        x2,
-        y2,
-      };
+      return { d: `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`, x1, x2 };
     });
 
     setPaths(next.filter(Boolean));
-    setSize({ w: g.width, h: g.height });
   }, []);
 
   useIsoLayoutEffect(() => {
@@ -141,6 +135,7 @@ export default function About({
     };
   }, [measure, members, highlights]);
 
+  // ---------- انیمیشن ورود (هدر، هاب، باکس‌ها) ----------
   useIsoLayoutEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -158,80 +153,178 @@ export default function About({
         }
       );
 
-      // هاب اول ظاهر می‌شود، بعد باکس‌ها از آن «بیرون می‌آیند»
-      const tl = gsap.timeline({
-        scrollTrigger: { trigger: gridRef.current, start: "top 75%" },
-      });
-      tl.fromTo(
-        "[data-hub]",
-        { autoAlpha: 0, scale: 0.8, filter: "blur(14px)" },
-        { autoAlpha: 1, scale: 1, filter: "blur(0px)", duration: 0.9, ease: "power3.out" }
-      ).fromTo(
-        "[data-card]",
-        { autoAlpha: 0, scale: 0.88, filter: "blur(12px)" },
-        {
-          autoAlpha: 1,
-          scale: 1,
-          filter: "blur(0px)",
-          duration: 0.8,
-          ease: "power3.out",
-          stagger: 0.12,
-        },
-        "-=0.3"
-      );
-
-      // کشیده شدن خط‌های سبز
-      gsap.utils.toArray("[data-line]").forEach((path) => {
-        gsap.fromTo(
-          path,
-          { strokeDashoffset: 1 },
-          {
-            strokeDashoffset: 0,
-            ease: "none",
-            scrollTrigger: {
-              trigger: gridRef.current,
-              start: "top 70%",
-              end: "bottom 70%",
-              scrub: 0.6,
-            },
-          }
+      gsap
+        .timeline({ scrollTrigger: { trigger: gridRef.current, start: "top 75%" } })
+        .fromTo(
+          "[data-hub]",
+          { autoAlpha: 0, scale: 0.85, filter: "blur(14px)" },
+          { autoAlpha: 1, scale: 1, filter: "blur(0px)", duration: 0.9, ease: "power3.out" }
+        )
+        .fromTo(
+          "[data-card]",
+          { autoAlpha: 0, scale: 0.9, filter: "blur(12px)" },
+          { autoAlpha: 1, scale: 1, filter: "blur(0px)", duration: 0.8, ease: "power3.out", stagger: 0.12 },
+          "-=0.35"
         );
-      });
 
-      gsap.fromTo(
-        "[data-dot]",
-        { autoAlpha: 0, scale: 0 },
-        {
-          autoAlpha: 1,
-          scale: 1,
-          transformOrigin: "center",
-          stagger: 0.1,
-          duration: 0.5,
-          ease: "back.out(2)",
-          scrollTrigger: { trigger: gridRef.current, start: "top 55%" },
-        }
-      );
-
-      // خط عمودی موبایل
       gsap.fromTo(
         "[data-vline]",
-        { scaleY: 0 },
+        { autoAlpha: 0 },
         {
-          scaleY: 1,
-          transformOrigin: "top",
-          ease: "none",
-          scrollTrigger: {
-            trigger: gridRef.current,
-            start: "top 70%",
-            end: "bottom 70%",
-            scrub: 0.6,
-          },
+          autoAlpha: 1,
+          duration: 1.4,
+          ease: "power2.out",
+          scrollTrigger: { trigger: gridRef.current, start: "top 70%" },
         }
       );
     }, rootRef);
 
     return () => ctx.revert();
+  }, [members, highlights]);
+
+  // ---------- خطوط: فید‌این + پالس نوری ----------
+  useIsoLayoutEffect(() => {
+    if (paths.length === 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: { trigger: gridRef.current, start: "top 70%" },
+      });
+
+      tl.fromTo(
+        "[data-line]",
+        { autoAlpha: 0, strokeDashoffset: 1 },
+        { autoAlpha: 1, strokeDashoffset: 0, duration: 1.6, ease: "power2.out", stagger: 0.15 },
+        0.4
+      );
+
+      // بسته‌ی نوری: از زیر باکس کناری بیرون می‌آید، روی خط می‌رود و داخل هاب محو می‌شود
+      const glow = gridRef.current.querySelector("[data-hubglow]");
+      gsap.utils.toArray("[data-pulse]").forEach((el, i) => {
+        const travel = 1.3 + Math.random() * 0.5;
+        const p = gsap.timeline({
+          paused: true,
+          repeat: -1,
+          repeatDelay: 1.2 + Math.random() * 2.2,
+        });
+        p.set(el, { autoAlpha: 0, strokeDashoffset: 0.1 })
+          .to(el, { autoAlpha: 1, duration: 0.12 })
+          .to(el, { strokeDashoffset: -1, duration: travel, ease: "power2.inOut" }, "<")
+          .to(el, { autoAlpha: 0, duration: 0.08 }, `>-0.08`);
+        if (glow) {
+          p.fromTo(
+            glow,
+            { autoAlpha: 0 },
+            { autoAlpha: 0.9, duration: 0.2, yoyo: true, repeat: 1, ease: "power2.out" },
+            travel - 0.25
+          );
+        }
+        tl.add(() => p.play(), 1.8 + i * 0.7 + Math.random() * 0.6);
+      });
+    }, rootRef);
+
+    return () => ctx.revert();
   }, [paths.length]);
+
+  // ---------- ذرات نورانی تصادفی دور باکس‌ها ----------
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const canvas = canvasRef.current;
+    const grid = gridRef.current;
+    if (!canvas || !grid) return;
+    const c = canvas.getContext("2d");
+
+    const color =
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-primary")
+        .trim() || "#ADFF2F";
+
+    const MAX = 70;
+    const RING = 8;
+    let particles = [];
+    let raf = 0;
+    let last = 0;
+    let visible = false;
+    let dpr = 1;
+
+    const fit = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const { w, h } = sizeRef.current;
+      canvas.width = (w + PAD * 2) * dpr;
+      canvas.height = (h + PAD * 2) * dpr;
+      canvas.style.width = `${w + PAD * 2}px`;
+      canvas.style.height = `${h + PAD * 2}px`;
+    };
+
+    const spawn = () => {
+      const boxes = boxesRef.current;
+      if (!boxes.length) return;
+      const b = boxes[Math.floor(Math.random() * boxes.length)];
+      const x0 = b.x - RING, y0 = b.y - RING, w = b.w + RING * 2, h = b.h + RING * 2;
+      let t = Math.random() * (2 * w + 2 * h);
+      let x, y, nx, ny;
+      if (t < w) { x = x0 + t; y = y0; nx = 0; ny = -1; }
+      else if ((t -= w) < h) { x = x0 + w; y = y0 + t; nx = 1; ny = 0; }
+      else if ((t -= h) < w) { x = x0 + w - t; y = y0 + h; nx = 0; ny = 1; }
+      else { t -= w; x = x0; y = y0 + h - t; nx = -1; ny = 0; }
+
+      const speed = 6 + Math.random() * 22;
+      particles.push({
+        x,
+        y,
+        vx: nx * speed + (Math.random() - 0.5) * 10,
+        vy: ny * speed + (Math.random() - 0.5) * 10,
+        r: 0.8 + Math.random() * 2.2,
+        life: 2.5 + Math.random() * 4,
+        age: 0,
+        ph: Math.random() * Math.PI * 2,
+        fl: 1.5 + Math.random() * 2.5,
+      });
+    };
+
+    const frame = (now) => {
+      raf = requestAnimationFrame(frame);
+      if (!visible) { last = now; return; }
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+
+      if (particles.length < MAX && Math.random() < 0.35) spawn();
+
+      c.setTransform(dpr, 0, 0, dpr, PAD * dpr, PAD * dpr);
+      c.clearRect(-PAD, -PAD, sizeRef.current.w + PAD * 2, sizeRef.current.h + PAD * 2);
+      c.fillStyle = color;
+      c.shadowColor = color;
+
+      particles = particles.filter((p) => (p.age += dt) < p.life);
+      for (const p of particles) {
+        p.ph += dt * p.fl;
+        p.x += (p.vx + Math.sin(p.ph) * 6) * dt;
+        p.y += (p.vy + Math.cos(p.ph * 0.8) * 6) * dt;
+        const k = p.age / p.life;
+        const env = Math.sin(Math.PI * k);
+        c.globalAlpha = Math.max(0, env * (0.55 + 0.45 * Math.sin(p.ph * 2)));
+        c.shadowBlur = p.r * 6;
+        c.beginPath();
+        c.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.globalAlpha = 1;
+    };
+
+    fit();
+    const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting), { rootMargin: "100px" });
+    io.observe(grid);
+    const ro = new ResizeObserver(fit);
+    ro.observe(grid);
+    raf = requestAnimationFrame(frame);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+      ro.disconnect();
+    };
+  }, []);
 
   const setNode = (i) => (el) => {
     nodeRefs.current[i] = el;
@@ -248,14 +341,36 @@ export default function About({
       }`}
     >
       <div className="flex items-center gap-5">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[1.3rem_1.3rem_1.3rem_0.4rem] bg-[var(--color-bg)] ring-1 ring-[var(--color-primary)] transition-[border-radius] duration-500 group-hover:rounded-full">
-          {m.image ? (
-            <img src={m.image} alt={m.name} loading="lazy" className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-3xl font-black text-[var(--color-primary)]">
-              {m.name.slice(0, 1).toUpperCase()}
-            </span>
-          )}
+        {/* آواتار: هنگام هاور شکل مربع‌گرد → دایره، حلقه‌ی چرخان و دو موج نوری */}
+        <div className="relative h-20 w-20 shrink-0">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-[1.3rem_1.3rem_1.3rem_0.4rem] border border-[var(--color-primary)] opacity-0 transition-[border-radius] duration-500 group-hover:rounded-[2.5rem] group-hover:[animation:siryx-ring_1.8s_ease-out_infinite]"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-[1.3rem_1.3rem_1.3rem_0.4rem] border border-[var(--color-primary)] opacity-0 transition-[border-radius] duration-500 group-hover:rounded-[2.5rem] group-hover:[animation:siryx-ring_1.8s_ease-out_0.9s_infinite]"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-[3px] overflow-hidden rounded-[1.5rem_1.5rem_1.5rem_0.6rem] opacity-0 transition-[opacity,border-radius] duration-500 group-hover:rounded-[2.75rem] group-hover:opacity-100"
+          >
+            <span className="absolute -inset-1/2 [animation:siryx-spin_2.4s_linear_infinite] [background:conic-gradient(from_0deg,transparent_0_65%,var(--color-primary)_100%)]" />
+          </span>
+          <div className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden rounded-[1.3rem_1.3rem_1.3rem_0.4rem] bg-[var(--color-bg)] ring-1 ring-[var(--color-primary)] transition-[border-radius,transform] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-[1.06] group-hover:rounded-[2.5rem]">
+            {m.image ? (
+              <img
+                src={m.image}
+                alt={m.name}
+                loading="lazy"
+                className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+              />
+            ) : (
+              <span className="text-3xl font-black text-[var(--color-primary)] transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-125">
+                {m.name.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+          </div>
         </div>
         <div dir="ltr" className="min-w-0">
           <h3 className="text-4xl font-black leading-none sm:text-5xl">
@@ -305,9 +420,7 @@ export default function About({
       ref={refFn}
       data-card
       className={`${boxBase} ${
-        i === 0
-          ? "rounded-[2.2rem_2.2rem_2.2rem_0.8rem]"
-          : "rounded-[2.2rem_2.2rem_0.8rem_2.2rem]"
+        i === 0 ? "rounded-[2.2rem_2.2rem_2.2rem_0.8rem]" : "rounded-[2.2rem_2.2rem_0.8rem_2.2rem]"
       }`}
     >
       <h3 className="text-xl font-black leading-8">
@@ -325,7 +438,10 @@ export default function About({
       dir="rtl"
       className="relative overflow-hidden bg-[var(--color-bg)] px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
     >
-      {/* پس‌زمینه: شبکه + نور لیمویی */}
+      <style>{`
+        @keyframes siryx-ring { 0% { transform: scale(1); opacity: .7 } 100% { transform: scale(1.6); opacity: 0 } }
+        @keyframes siryx-spin { to { transform: rotate(360deg) } }
+      `}</style>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[linear-gradient(var(--color-surface)_1px,transparent_1px),linear-gradient(90deg,var(--color-surface)_1px,transparent_1px)] bg-[size:64px_64px] opacity-20 [mask-image:radial-gradient(ellipse_at_top,black,transparent_75%)]"
@@ -345,28 +461,52 @@ export default function About({
           </h2>
         </header>
 
-        {/* شبکه: چپ و راست باکس‌ها، وسط هاب. dir=ltr فقط برای هندسه‌ی چیدمان */}
         <div
           ref={gridRef}
           dir="ltr"
-          className="relative mt-16 grid gap-10 md:grid-cols-[1fr_minmax(280px,0.8fr)_1fr] md:grid-rows-2 md:gap-x-24 md:gap-y-14"
+          className="relative mt-20 grid gap-10 md:grid-cols-[1fr_minmax(230px,0.55fr)_1fr] md:grid-rows-2 md:gap-x-28 md:gap-y-16"
         >
+          {/* ذرات نورانی؛ پشت باکس‌ها تا از لبه‌هایشان بیرون بزنند */}
+          <canvas
+            ref={canvasRef}
+            aria-hidden="true"
+            className="pointer-events-none absolute z-0"
+            style={{ left: -PAD, top: -PAD }}
+          />
+
           {/* خط عمودی موبایل */}
           <div
             aria-hidden="true"
             data-vline
-            className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-gradient-to-b from-[var(--color-primary)] via-[var(--color-primary)] to-transparent shadow-[0_0_14px_var(--color-primary)] md:hidden"
+            className="absolute bottom-0 left-1/2 top-0 z-0 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-[var(--color-primary)] to-transparent opacity-0 shadow-[0_0_14px_var(--color-primary)] md:hidden"
           />
 
           {/* خطوط دسکتاپ */}
           {paths.length > 0 && (
             <svg
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 hidden h-full w-full overflow-visible md:block"
+              className="pointer-events-none absolute inset-0 z-0 hidden h-full w-full overflow-visible md:block"
               width={size.w}
               height={size.h}
               viewBox={`0 0 ${size.w} ${size.h}`}
             >
+              <defs>
+                {paths.map((p, i) => (
+                  <linearGradient
+                    key={i}
+                    id={`siryx-line-${i}`}
+                    gradientUnits="userSpaceOnUse"
+                    x1={p.x1}
+                    y1="0"
+                    x2={p.x2}
+                    y2="0"
+                  >
+                    <stop offset="0" stopColor="var(--color-primary)" stopOpacity="0.15" />
+                    <stop offset="0.5" stopColor="var(--color-primary)" stopOpacity="1" />
+                    <stop offset="1" stopColor="var(--color-primary)" stopOpacity="0.15" />
+                  </linearGradient>
+                ))}
+              </defs>
               {paths.map((p, i) => (
                 <g key={i}>
                   <path
@@ -374,29 +514,38 @@ export default function About({
                     data-line
                     pathLength="1"
                     strokeDasharray="1"
-                    strokeDashoffset="1"
                     fill="none"
-                    stroke="var(--color-primary)"
+                    stroke={`url(#siryx-line-${i})`}
                     strokeWidth="2"
                     strokeLinecap="round"
                     style={{ filter: "drop-shadow(0 0 6px var(--color-primary))" }}
                   />
-                  <circle data-dot cx={p.x1} cy={p.y1} r="5" fill="var(--color-primary)" style={{ filter: "drop-shadow(0 0 8px var(--color-primary))" }} />
-                  <circle data-dot cx={p.x2} cy={p.y2} r="5" fill="var(--color-primary)" style={{ filter: "drop-shadow(0 0 8px var(--color-primary))" }} />
+                  <path
+                    d={p.d}
+                    data-pulse
+                    pathLength="1"
+                    strokeDasharray="0.07 1.3"
+                    strokeDashoffset="0.1"
+                    fill="none"
+                    stroke="var(--color-text)"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    style={{ opacity: 0, visibility: "hidden", filter: "drop-shadow(0 0 7px var(--color-primary))" }}
+                  />
                 </g>
               ))}
             </svg>
           )}
 
-          {/* بالا-چپ / بالا-راست: اعضا */}
-          <div dir="rtl" className="relative z-10 md:col-start-1 md:row-start-1 md:self-start">
+          {/* بالا: اعضا */}
+          <div dir="rtl" className="relative z-10 md:col-start-1 md:row-start-1">
             {renderMember(members[0], 0, setNode(0))}
           </div>
-          <div dir="rtl" className="relative z-10 md:col-start-3 md:row-start-1 md:self-start">
+          <div dir="rtl" className="relative z-10 md:col-start-3 md:row-start-1">
             {renderMember(members[1], 1, setNode(1))}
           </div>
 
-          {/* وسط: هاب تیم — در موبایل بالاتر از همه */}
+          {/* وسط: هاب تیم */}
           <div
             dir="rtl"
             className="relative z-10 order-first md:order-none md:col-start-2 md:row-span-2 md:row-start-1 md:self-center"
@@ -404,29 +553,28 @@ export default function About({
             <div
               ref={hubRef}
               data-hub
-              className="rounded-[1rem_3rem_3rem_3rem] bg-[var(--color-bg)] p-8 text-center shadow-[0_0_0_1px_var(--color-primary),0_0_0_8px_var(--color-bg),0_0_0_9px_color-mix(in_srgb,var(--color-primary)_40%,transparent),0_0_80px_-16px_var(--color-primary)]"
+              className="relative rounded-[1rem_2.5rem_2.5rem_2.5rem] bg-[var(--color-bg)] p-7 text-center shadow-[0_0_0_1px_var(--color-primary),0_0_0_8px_var(--color-bg),0_0_0_9px_color-mix(in_srgb,var(--color-primary)_40%,transparent),0_0_80px_-16px_var(--color-primary)]"
             >
-              <p dir="ltr" className="text-5xl font-black leading-none tracking-tight sm:text-6xl">
+              <span
+                data-hubglow
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 shadow-[0_0_55px_6px_var(--color-primary)]"
+                style={{ visibility: "hidden" }}
+              />
+              <p dir="ltr" className="text-4xl font-black leading-none tracking-tight sm:text-5xl">
                 {team.name}
                 <span className="text-[var(--color-primary)] [text-shadow:0_0_30px_color-mix(in_srgb,var(--color-primary)_60%,transparent)]">.</span>
               </p>
               <p className="mt-4 font-bold text-[var(--color-primary)]">{team.tagline}</p>
-              <p className="mt-4 leading-8 opacity-70">{team.description}</p>
-              <ul className="mt-6 flex flex-wrap justify-center gap-2">
-                {team.facts.map((f) => (
-                  <li key={f} className="rounded-full border-[1.5px] border-[var(--color-surface)] px-3.5 py-1 text-sm">
-                    {f}
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-3 text-sm leading-7 opacity-70">{team.description}</p>
             </div>
           </div>
 
-          {/* پایین-چپ / پایین-راست: توضیحات تیم */}
-          <div dir="rtl" className="relative z-10 md:col-start-1 md:row-start-2 md:self-end">
+          {/* پایین: توضیحات تیم */}
+          <div dir="rtl" className="relative z-10 md:col-start-1 md:row-start-2">
             {renderInfo(highlights[0], 0, setNode(2))}
           </div>
-          <div dir="rtl" className="relative z-10 md:col-start-3 md:row-start-2 md:self-end">
+          <div dir="rtl" className="relative z-10 md:col-start-3 md:row-start-2">
             {renderInfo(highlights[1], 1, setNode(3))}
           </div>
         </div>
