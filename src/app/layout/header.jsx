@@ -1,4 +1,7 @@
-import { Link, useLocation } from 'react-router-dom'
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import gsap from 'gsap'
@@ -101,7 +104,7 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [theme, setTheme] = useState(getInitialTheme)
-  const location = useLocation()
+  const pathname = usePathname()
 
   const headerRef = useRef(null)
   const panelRef = useRef(null)
@@ -118,7 +121,7 @@ export default function Header() {
   const contactWrapRef = useRef(null)
   const contactRef = useRef(null)
 
-  const activeIndex = navLinks.findIndex((l) => isPathActive(location.pathname, l.path))
+  const activeIndex = navLinks.findIndex((l) => isPathActive(pathname, l.path))
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -175,7 +178,7 @@ export default function Header() {
 
   useEffect(() => {
     setIsOpen(false)
-  }, [location.pathname])
+  }, [pathname])
 
   useLayoutEffect(() => {
     if (prefersReduced()) return
@@ -363,7 +366,7 @@ export default function Header() {
         >
           <div className="flex items-center gap-6 lg:gap-10">
             <Link
-              to="/"
+              href="/"
               data-intro
               className={`rounded-lg text-2xl uppercase tracking-wider text-[var(--color-text)] ${focusRing}`}
             >
@@ -388,7 +391,7 @@ export default function Header() {
                 return (
                   <li key={item.path} ref={(el) => (itemRefs.current[i] = el)} data-intro>
                     <Link
-                      to={item.path}
+                      href={item.path}
                       aria-current={isActive ? 'page' : undefined}
                       onMouseEnter={() => movePill(i)}
                       onFocus={() => movePill(i)}
@@ -408,7 +411,7 @@ export default function Header() {
             <div ref={contactWrapRef} data-intro className="hidden md:block">
               <Link
                 ref={contactRef}
-                to={CONTACT_PATH}
+                href={CONTACT_PATH}
                 className={`block rounded-full bg-[var(--color-primary)] px-6 py-2 text-base text-[var(--color-on-primary)] shadow-[0_0_24px_var(--color-glow)] transition-[box-shadow,filter] duration-300 hover:shadow-[0_0_32px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] hover:brightness-110 ${focusRing}`}
               >
                 تماس با ما
@@ -454,7 +457,7 @@ export default function Header() {
 
         <div className="relative flex items-center justify-between">
           <Link
-            to="/"
+            href="/"
             onClick={() => setIsOpen(false)}
             className="text-2xl uppercase tracking-wider text-[var(--color-text)]"
           >
@@ -480,7 +483,7 @@ export default function Header() {
             return (
               <Link
                 key={item.path}
-                to={item.path}
+                href={item.path}
                 onClick={() => setIsOpen(false)}
                 aria-current={isActive ? 'page' : undefined}
                 className={`border-b border-[var(--color-border)] py-5 text-3xl transition-all duration-300 ${
@@ -495,7 +498,7 @@ export default function Header() {
         </div>
 
         <Link
-          to={CONTACT_PATH}
+          href={CONTACT_PATH}
           onClick={() => setIsOpen(false)}
           className="relative mb-6 mt-auto block rounded-full bg-[var(--color-primary)] py-3.5 text-center text-lg text-[var(--color-on-primary)] shadow-[0_0_24px_var(--color-glow)]"
         >
