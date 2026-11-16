@@ -1,14 +1,18 @@
-import { Geist, Geist_Mono, Lalezar} from "next/font/google";
+import { Geist, Geist_Mono, Lalezar, Michroma } from "next/font/google";
 
 import "./globals.css";
 import AppRouter from "@/app/AppRouter";
 
-const Lalezars = Lalezar({
-  variable: "--font-Lalezar",
-  subsets: ["arabic", "latin"],
-  display: "swap",
-   weight: "400"
+const michroma = Michroma({
+  variable: "--font-Michroma",
+  weight: "400",
 });
+
+const lalezar = Lalezar({
+  variable: "--font-Lalezar",
+  weight: "400",
+});
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -28,7 +32,7 @@ export default function RootLayout() {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${Lalezars.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${lalezar.variable} ${michroma.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
 
