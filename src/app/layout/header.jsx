@@ -15,10 +15,8 @@ const CONTACT_PATH = '/contact'
 const prefersReduced = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-// چقدر بوردر بعد از گوشه‌ی گرد، روی لبه‌ی عمودی ادامه پیدا کنه (۰ تا ۱ از بخش صاف لبه)
 const TAIL = 0.5
 
-// حلقه‌ی گرادیانی ۱.۵ پیکسلی که دقیقاً شکل قرص رو دنبال می‌کنه (پایین سبز، بالا محو)
 const PILL_RING = {
   padding: 1.5,
   background: 'linear-gradient(to top, var(--color-primary), var(--color-border) 55%, transparent)',
@@ -39,7 +37,6 @@ const getInitialTheme = () => {
 const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]'
 
-/* ───────────── دکمه‌ی دارک/لایت: آیکون ماه و خورشید با GSAP جابه‌جا می‌شن ───────────── */
 function ThemeToggle({ theme, onToggle, ...rest }) {
   const sunRef = useRef(null)
   const moonRef = useRef(null)
@@ -123,13 +120,11 @@ export default function Header() {
 
   const activeIndex = navLinks.findIndex((l) => isPathActive(location.pathname, l.path))
 
-  /* ───────────── تم ───────────── */
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     try {
       localStorage.setItem('theme', theme)
     } catch {
-      /* ignore */
     }
   }, [theme])
 
@@ -145,7 +140,6 @@ export default function Header() {
       return
     }
 
-    // دایره‌ای از وسط دکمه باز می‌شه و تم جدید رو نشون می‌ده
     const rect = e.currentTarget.getBoundingClientRect()
     const x = rect.left + rect.width / 2
     const y = rect.top + rect.height / 2
@@ -159,7 +153,6 @@ export default function Header() {
     })
   }
 
-  /* ───────────── اسکرول ───────────── */
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 0)
     handleScroll()
@@ -184,7 +177,6 @@ export default function Header() {
     setIsOpen(false)
   }, [location.pathname])
 
-  /* ───────────── GSAP: ورود اولیه‌ی هدر (از راست به چپ پشت سر هم) ───────────── */
   useLayoutEffect(() => {
     if (prefersReduced()) return
     const ctx = gsap.context(() => {
@@ -201,7 +193,6 @@ export default function Header() {
     return () => ctx.revert()
   }, [])
 
-  /* ───────────── GSAP: بوردرها (مسیر SVG که گوشه‌ی گرد هدر رو دنبال می‌کنه) ───────────── */
   const applyDash = useCallback(() => {
     const items = [
       [topPathRef.current, pathInfo.current.topLen, progress.current.top],
@@ -210,7 +201,7 @@ export default function Header() {
     items.forEach(([path, len, p]) => {
       if (!path) return
       path.style.strokeDasharray = `${len} ${len * 2 + 10}`
-      path.style.strokeDashoffset = `${(len + 2) * (1 - p)}` // +2 تا سر گرد خط وقتی صفره دیده نشه
+      path.style.strokeDashoffset = `${(len + 2) * (1 - p)}`
     })
   }, [])
 
@@ -223,13 +214,11 @@ export default function Header() {
 
     const w = header.offsetWidth
     const h = header.offsetHeight
-    const cssRadius = parseFloat(getComputedStyle(panel).borderTopLeftRadius) || 16 // همون radius پنل
+    const cssRadius = parseFloat(getComputedStyle(panel).borderTopLeftRadius) || 16
     const r = Math.min(cssRadius, w / 2, h / 2)
     const tail = Math.max(0, (h - 2 * r) * TAIL)
 
-    // بالا: از چپ به راست، بعد دور گوشه‌ی بالا-راست می‌پیچه و کمی میاد پایین
     top.setAttribute('d', `M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} v ${tail}`)
-    // پایین: از راست به چپ، بعد دور گوشه‌ی پایین-چپ می‌پیچه و کمی میره بالا
     bottom.setAttribute('d', `M ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} v ${-tail}`)
 
     pathInfo.current = { topLen: top.getTotalLength(), bottomLen: bottom.getTotalLength() }
@@ -239,7 +228,7 @@ export default function Header() {
   useLayoutEffect(() => {
     progress.current = { top: 0, bottom: 0 }
 
-    const ro = new ResizeObserver(drawGeometry) // عرض/ارتفاع هدر موقع اسکرول عوض می‌شه
+    const ro = new ResizeObserver(drawGeometry)
     ro.observe(headerRef.current)
     drawGeometry()
 
@@ -268,7 +257,6 @@ export default function Header() {
     else tl.reverse()
   }, [isScrolled])
 
-  /* ───────────── GSAP: قرص متحرک زیر لینک‌ها (دنبال موس می‌ره، برمی‌گرده سر لینک فعال) ───────────── */
   const movePill = useCallback((index, instant = false) => {
     const pill = pillRef.current
     if (!pill) return
@@ -292,11 +280,10 @@ export default function Header() {
     placedOnce.current = true
     const onResize = () => movePill(activeIndex, true)
     window.addEventListener('resize', onResize)
-    document.fonts?.ready.then(onResize) // بعد از لود شدن Lalezar عرض‌ها عوض می‌شه
+    document.fonts?.ready.then(onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [activeIndex, movePill])
 
-  /* ───────────── GSAP: دکمه‌ی تماس با ما کمی دنبال موس می‌کشه (magnetic) ───────────── */
   useLayoutEffect(() => {
     const el = contactRef.current
     const wrap = contactWrapRef.current
@@ -347,13 +334,11 @@ export default function Header() {
           isScrolled ? 'md:mt-4 md:w-[85%]' : ''
         }`}
       >
-        {/* شیشه‌ی پشت هدر (با GSAP ظاهر می‌شه) */}
         <div
           ref={panelRef}
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 rounded-2xl bg-[color-mix(in_srgb,var(--color-bg)_70%,transparent)] opacity-0 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.55)] backdrop-blur-xl"
         />
-        {/* بوردر بالا: از چپ به راست */}
         <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
           <defs>
             <linearGradient id="siryx-line-top" x1="0" y1="0" x2="1" y2="0">
@@ -451,7 +436,6 @@ export default function Header() {
         </nav>
       </header>
 
-      {/* ───────────── منوی موبایل ───────────── */}
       <div
         id="mobile-menu"
         dir="rtl"
