@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
@@ -12,12 +11,12 @@
   --color-text: #F4F6F8;
   --color-muted: #929BAA;
   --color-glow: rgba(173, 255, 47, 0.14);
-  --color-on-primary: #090B10; 
+  --color-on-primary: #090B10;
 }
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --color-primary: #5F9B00; 
+  --color-primary: #5F9B00;
   --color-bg: #F6F8FB;
   --color-secondary: #EDF0F5;
   --color-surface: #FFFFFF;
@@ -28,21 +27,17 @@
   --color-on-primary: #090B10;
 }
 
-
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
 }
-::view-transition-old(root) {
-  z-index: 1;
-}
-::view-transition-new(root) {
-  z-index: 2;
-}
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-lalezar: var(--font-Lalezar);
@@ -52,5 +47,59 @@
 body {
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* نور گوشه‌ی بالا سمت راست */
+body::before {
+  background: radial-gradient(60% 50% at 100% 0%, var(--color-glow), transparent);
+}
+
+/* شبکه‌ی محو */
+body::after {
+  background-image:
+    linear-gradient(var(--color-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: 0.5;
+  -webkit-mask-image: radial-gradient(ellipse at top, black, transparent 70%);
+  mask-image: radial-gradient(ellipse at top, black, transparent 70%);
+}
+/* اسکرول‌بار: باریک، گرد و لیمویی */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+  background: var(--color-primary);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* فایرفاکس */
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-primary) transparent;
+  }
 }

@@ -49,8 +49,9 @@ const defaultProjects = [
     tags: ["React", "Recharts"],
     image: "",
     link: "#",
-  },  {
-    id: 4,
+  },
+  {
+    id: 5,
     title: "داشبورد تحلیل فروش",
     description: "نمودارهای زنده و گزارش‌های قابل خروجی برای تیم فروش.",
     category: "وب‌سایت",
@@ -171,8 +172,30 @@ export default function Portfolio({
       ref={rootRef}
       id="portfolio"
       dir="rtl"
-      className="bg-[var(--color-bg)] px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
+      className="relative isolate overflow-hidden bg-[var(--color-bg)] px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
     >
+      {/* ---------- بک‌گراند: گرید + نور لیمویی بالا سمت راست ---------- */}
+
+      {/* گرید: کم‌رنگ و محو شونده از چپ، راست، بالا و پایین */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(var(--color-border)_1px,transparent_1px),linear-gradient(90deg,var(--color-border)_1px,transparent_1px)] bg-[size:56px_56px] opacity-30"
+        style={{
+          WebkitMaskImage:
+            "linear-gradient(to right, transparent, black 30%, black 70%, transparent), linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)",
+          maskImage:
+            "linear-gradient(to right, transparent, black 30%, black 70%, transparent), linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)",
+          WebkitMaskComposite: "source-in",
+          maskComposite: "intersect",
+        }}
+      />
+
+      {/* نور لیمویی جمع‌وجور گوشه‌ی بالا سمت راست (اندازه‌ی ثابت، مستقل از ارتفاع سکشن) */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-58 -top-58 -z-10 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary)_15%,transparent),transparent_70%)] md:h-[45rem] md:w-[45rem]"
+      />
+
       <div className="mx-auto max-w-5xl">
         <header className="max-w-xl">
           <h2 className="text-3xl font-bold sm:text-4xl">{title}</h2>
