@@ -63,8 +63,9 @@ const defaultProjects = [
 
 export default function Portfolio({
   projects = defaultProjects,
-  title = "نمونه کارها",
-  subtitle = "بخشی از پروژه‌هایی که با دقت و علاقه ساخته‌ایم.",
+  title = "نـمـونــه",
+  title2 = "کــار هـا",
+  subtitle = "بخشی از پروژه‌هایی که با دقت و علاقه ساخته‌ایم",
 }) {
   const rootRef = useRef(null);
   const listRef = useRef(null);
@@ -143,7 +144,7 @@ export default function Portfolio({
           ease: "none",
           scrollTrigger: {
             trigger: "[data-list]",
-            start: "top 60%",
+            start: "top center",
             end: `bottom+=${geo.extra + FADE} 60%`,
             scrub: true,
           },
@@ -160,7 +161,7 @@ export default function Portfolio({
           ease: "power3.out",
           scrollTrigger: {
             trigger: "[data-junction]",
-            start: () => `top ${window.innerHeight * 0.6 - FADE / 2}px`,
+            start: "top center",
             toggleActions: "play none none reverse",
             invalidateOnRefresh: true,
           },
@@ -181,7 +182,7 @@ export default function Portfolio({
             paused: true,
             scrollTrigger: {
               trigger: item,
-              start: `center+=${FADE / 2} 60%`,
+              start: "center center",
               toggleActions: "play none none reverse",
             },
           })
@@ -225,10 +226,19 @@ export default function Portfolio({
       />
 
       <div className="mx-auto max-w-5xl">
-        <header className="max-w-xl">
-          <h2 className="text-3xl font-bold sm:text-4xl justify-self-center text-center">{title}</h2>
-          <p className="mt-4 leading-8 opacity-70">{subtitle}</p>
-        </header>
+<header className="w-full text-center">
+  <div className="flex items-center justify-center gap-4">
+    <span className="h-px flex-1 max-w-24 bg-gradient-to-r from-transparent to-[var(--color-primary)] opacity-70" />
+
+    <h2 className="shrink-0 text-3xl sm:text-4xl font-lalezar">
+      {title} <span className="text-[var(--color-primary)]">{title2}</span>
+    </h2>
+
+    <span className="h-px flex-1 max-w-24 bg-gradient-to-l from-transparent to-[var(--color-primary)] opacity-70" />
+  </div>
+
+  <p className="mt-4 leading-8 opacity-70">{subtitle}</p>
+</header>
 
         <div ref={listRef} data-list className="relative mt-16">
           {geo.h > 0 && (
