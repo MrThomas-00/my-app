@@ -1,10 +1,14 @@
-import { Geist, Geist_Mono, Lalezar, Michroma } from "next/font/google";
+import { Geist, Geist_Mono, Lalezar, Michroma,Vazirmatn } from "next/font/google";
 
 import "./globals.css";
 import Header from "@/app/layout/header";
 import Footer from "@/app/layout/footer";
 import SmoothScroll from "@/components/SmoothScroll";
-
+const vazirmatn = Vazirmatn({
+  variable: "--font-vazirmatn-var",
+  weight: ["400", "500", "700"],
+  subsets: ["arabic"],
+});
 const michroma = Michroma({
   variable: "--font-Michroma",
   weight: "400",
@@ -37,7 +41,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${lalezar.variable} ${michroma.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${lalezar.variable} ${michroma.variable} ${vazirmatn.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <SmoothScroll>

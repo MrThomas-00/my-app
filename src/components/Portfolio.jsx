@@ -68,8 +68,6 @@ export default function Portfolio({
 }) {
   const rootRef = useRef(null);
   const listRef = useRef(null);
-  // h: ارتفاع لیست | H: ارتفاع تا ته سکشن (خط تا لبه‌ی سکشن بعدی ادامه دارد)
-  // jx: مختصات افقی نقطه‌ی اتصال خط عمودی به خط افقی پایین سکشن
   const [geo, setGeo] = useState({ w: 0, h: 0, H: 0, jx: 0, extra: 0, nodes: [], d: "" });
 
   useIsoLayoutEffect(() => {
@@ -133,7 +131,6 @@ export default function Portfolio({
         gsap.set("[data-ring]", { attr: { r: 9 } });
         gsap.set("[data-core]", { attr: { r: 4.5 } });
         gsap.set("[data-junction]", { scaleX: 1 });
-        gsap.set("[data-light]", { opacity: 1 });
         return;
       }
 
@@ -153,20 +150,7 @@ export default function Portfolio({
         }
       );
 
-      // خط افقی پایین سکشن: اول بدون نور از نقطه‌ی اتصال به چپ و راست پر می‌شود.
-      // بعد از کامل شدن، نور (به سمت بالا) روشن می‌شود و جرقه‌ها شروع به دویدن می‌کنند.
-      const light = rootRef.current.querySelector("[data-light]");
-      const glintR = rootRef.current.querySelector("[data-glint-r]");
-      const glintL = rootRef.current.querySelector("[data-glint-l]");
-      const sectionW = rootRef.current.clientWidth;
-
-      const glints = gsap.timeline({ paused: true, repeat: -1, repeatDelay: 1.4 });
-      glints
-        .fromTo(glintR, { x: 0 }, { x: sectionW - geo.jx, duration: 2.4, ease: "power2.in" }, 0)
-        .fromTo(glintL, { x: 0 }, { x: -geo.jx, duration: 2.4, ease: "power2.in" }, 0)
-        .fromTo([glintR, glintL], { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power1.out" }, 0)
-        .to([glintR, glintL], { opacity: 0, duration: 0.7, ease: "power1.in" }, 1.7);
-
+      // خط افقی پایین سکشن: وقتی خط عمودی رسید، از نقطه‌ی اتصال به چپ و راست پر می‌شود
       gsap.fromTo(
         "[data-junction]",
         { scaleX: 0, transformOrigin: `${geo.jx}px 50%` },
@@ -174,20 +158,11 @@ export default function Portfolio({
           scaleX: 1,
           duration: 0.9,
           ease: "power3.out",
-          onComplete: () => {
-            gsap.to(light, { opacity: 1, duration: 1, ease: "power2.out", overwrite: true });
-            glints.restart();
-          },
           scrollTrigger: {
             trigger: "[data-junction]",
             start: () => `top ${window.innerHeight * 0.6 - FADE / 2}px`,
             toggleActions: "play none none reverse",
             invalidateOnRefresh: true,
-            onLeaveBack: () => {
-              glints.pause(0);
-              gsap.killTweensOf(light);
-              gsap.set(light, { opacity: 0 });
-            },
           },
         }
       );
@@ -230,9 +205,7 @@ export default function Portfolio({
       dir="rtl"
       className="relative isolate overflow-hidden bg-[var(--color-bg)] px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
     >
-      {/* ---------- بک‌گراند: گرید + نور لیمویی بالا سمت راست ---------- */}
 
-      {/* گرید: کم‌رنگ و محو شونده از چپ، راست، بالا و پایین */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(var(--color-border)_1px,transparent_1px),linear-gradient(90deg,var(--color-border)_1px,transparent_1px)] bg-[size:56px_56px] opacity-30"
@@ -246,7 +219,6 @@ export default function Portfolio({
         }}
       />
 
-      {/* نور لیمویی جمع‌وجور گوشه‌ی بالا سمت راست (اندازه‌ی ثابت، مستقل از ارتفاع سکشن) */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-28 -top-28 -z-10 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary)_20%,transparent),transparent_70%)] md:h-[26rem] md:w-[26rem]"
@@ -269,7 +241,6 @@ export default function Portfolio({
               fill="none"
             >
               <defs>
-                {/* ابتدای خط محو می‌شود؛ انتها پررنگ می‌ماند تا به خط افقی برسد */}
                 <linearGradient
                   id="pf-fade"
                   gradientUnits="userSpaceOnUse"
@@ -356,16 +327,16 @@ export default function Portfolio({
                         imageOnLeft ? "md:order-1" : "md:order-2"
                       }`}
                     >
-                      <span className="text-sm opacity-60">{category}</span>
-                      <h3 className="mt-2 text-2xl font-bold leading-snug">
+                      <span className="text-sm opacity-60 font-vazirmatn">{category}</span>
+                      <h3 className="mt-2 text-2xl leading-snug font-lalezar!">
                         {title}
                       </h3>
-                      <p className="mt-3 max-w-md leading-8 opacity-70">
+                      <p className="mt-3 max-w-md leading-8 opacity-70 font-vazirmatn ">
                         {description}
                       </p>
 
                       {tags.length > 0 && (
-                        <ul className="mt-5 flex flex-wrap gap-2">
+                        <ul className="mt-5 flex flex-wrap gap-2 font-vazirmatn">
                           {tags.map((tag) => (
                             <li
                               key={tag}
@@ -421,36 +392,9 @@ export default function Portfolio({
       <div
         aria-hidden="true"
         data-junction
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-0"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[2px] bg-[linear-gradient(90deg,transparent,var(--color-primary)_8%,var(--color-primary)_92%,transparent)] opacity-70 [box-shadow:0_-2px_14px_1px_color-mix(in_srgb,var(--color-primary)_35%,transparent)]"
         style={{ transform: "scaleX(0)", transformOrigin: `${geo.jx}px 50%` }}
-      >
-        {/* خط اصلی (بدون نور؛ نور بعد از کامل شدن خط روشن می‌شود) */}
-        <div className="absolute inset-x-0 bottom-0 h-[2px] bg-[linear-gradient(90deg,transparent,var(--color-primary)_8%,var(--color-primary)_92%,transparent)]" />
-
-        {/* نور: فقط به سمت بالا */}
-        <div data-light className="absolute inset-0 opacity-0">
-          {/* هاله‌ی نوری که از خط به بالا می‌رود */}
-          <div className="absolute inset-x-0 bottom-0 h-10 bg-[linear-gradient(to_top,color-mix(in_srgb,var(--color-primary)_28%,transparent),transparent)] [mask-image:linear-gradient(90deg,transparent,black_12%,black_88%,transparent)]" />
-
-          {/* درخشش خط (به سمت بالا) */}
-          <div className="absolute inset-x-0 bottom-0 h-[2px] [box-shadow:0_-6px_20px_0_color-mix(in_srgb,var(--color-primary)_55%,transparent)]" />
-
-          {/* برق سفید باریک وسط خط */}
-          <div className="absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-text)_20%,var(--color-text)_80%,transparent)] opacity-70" />
-
-          {/* جرقه‌های نور که روی خط به چپ و راست می‌دوند */}
-          <div
-            data-glint-r
-            className="absolute bottom-0 h-[3px] w-40 rounded-full bg-[linear-gradient(90deg,transparent,var(--color-primary)_60%,var(--color-text))] opacity-0 [box-shadow:0_-4px_14px_0_color-mix(in_srgb,var(--color-primary)_60%,transparent)]"
-            style={{ left: geo.jx }}
-          />
-          <div
-            data-glint-l
-            className="absolute bottom-0 h-[3px] w-40 rounded-full bg-[linear-gradient(270deg,transparent,var(--color-primary)_60%,var(--color-text))] opacity-0 [box-shadow:0_-4px_14px_0_color-mix(in_srgb,var(--color-primary)_60%,transparent)]"
-            style={{ left: geo.jx - 160 }}
-          />
-        </div>
-      </div>
+      />
     </section>
   );
 }
