@@ -42,11 +42,19 @@
   --font-mono: var(--font-geist-mono);
   --font-lalezar: var(--font-Lalezar);
   --font-michroma: var(--font-Michroma);
+  --font-vazirmatn: var(--font-vazirmatn-var);
 }
 
 body {
   background: var(--color-bg);
   color: var(--color-text);
+  font-family: var(--font-vazirmatn-var), "Vazirmatn", sans-serif;
+}
+
+@layer utilities {
+  .font-vazirmatn {
+    font-family: var(--font-vazirmatn-var), "Vazirmatn", sans-serif;
+  }
 }
 
 body::before,
