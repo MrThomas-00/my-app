@@ -6,30 +6,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/**
- * بخش نمونه کارها: خط زیگزاگی نرم که با اسکرول کشیده می‌شود (GSAP)
- *
- * نصب:  npm i gsap
- *
- * رنگ‌ها باید در globals.css تعریف شده باشند:
- *   :root {
- *     --color-primary: #ADFF2F;
- *     --color-bg: #161A21;
- *     --color-secondary: #1F242D;
- *     --color-surface: #2A313C;
- *     --color-text: #F2F5F1;
- *   }
- *
- * استفاده:
- *   <Portfolio />
- *   <Portfolio projects={myProjects} />
- *
- * هر پروژه:
- * { id, title, description, category, tags: [], image?: "/img.jpg", link?: "https://..." }
- */
-
-const AMPLITUDE = 36; // میزان رفت‌وبرگشت خط در دسکتاپ (پیکسل)
-const FADE = 120; // طول محو شدن نوک خط (پیکسل)
+const AMPLITUDE = 36;
+const FADE = 120;
 
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -71,6 +49,14 @@ const defaultProjects = [
     tags: ["React", "Recharts"],
     image: "",
     link: "#",
+  },  {
+    id: 4,
+    title: "داشبورد تحلیل فروش",
+    description: "نمودارهای زنده و گزارش‌های قابل خروجی برای تیم فروش.",
+    category: "وب‌سایت",
+    tags: ["React", "Recharts"],
+    image: "",
+    link: "#",
   },
 ];
 
@@ -83,7 +69,6 @@ export default function Portfolio({
   const listRef = useRef(null);
   const [geo, setGeo] = useState({ w: 0, h: 0, nodes: [], d: "" });
 
-  // ۱) اندازه‌گیری: مسیر خط را از روی جای واقعی پروژه‌ها می‌سازد
   useIsoLayoutEffect(() => {
     const list = listRef.current;
     if (!list) return;
@@ -107,7 +92,6 @@ export default function Portfolio({
         const p = pts[i - 1];
         const q = pts[i];
         const my = (p.y + q.y) / 2;
-        // منحنی S شکل نرم بین دو نقطه
         d += ` C ${p.x} ${my}, ${q.x} ${my}, ${q.x} ${q.y}`;
       }
 
@@ -122,7 +106,6 @@ export default function Portfolio({
     return () => ro.disconnect();
   }, [projects]);
 
-  // ۲) انیمیشن GSAP
   useIsoLayoutEffect(() => {
     if (!geo.h) return;
 
@@ -137,7 +120,6 @@ export default function Portfolio({
         return;
       }
 
-      // خط: با اسکرول ظاهر می‌شود و نوکش نرم محو است
       gsap.fromTo(
         "[data-mask-rect]",
         { attr: { y: -(geo.h + FADE) } },
@@ -153,7 +135,6 @@ export default function Portfolio({
         }
       );
 
-      // هر پروژه وقتی خط به نقطه‌اش رسید ظاهر می‌شود
       items.forEach((item, i) => {
         const content = item.querySelector("[data-content]");
         const ring = `[data-ring="${i}"]`;
@@ -209,7 +190,6 @@ export default function Portfolio({
               fill="none"
             >
               <defs>
-                {/* محو شدن ابتدا و انتهای خط */}
                 <linearGradient
                   id="pf-fade"
                   gradientUnits="userSpaceOnUse"
@@ -224,7 +204,6 @@ export default function Portfolio({
                   <stop offset="1" style={{ stopColor: "var(--color-primary)", stopOpacity: 0 }} />
                 </linearGradient>
 
-                {/* ماسک ظاهر شدن خط با اسکرول (لبه‌ی پایینی نرم) */}
                 <linearGradient id="pf-reveal" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0" stopColor="#fff" />
                   <stop offset={geo.h / (geo.h + FADE)} stopColor="#fff" />
@@ -281,7 +260,7 @@ export default function Portfolio({
             {projects.map((project, i) => {
               const { title, description, category, tags = [], image, link } =
                 project;
-              const imageOnLeft = i % 2 === 0; // یکی در میان چپ و راست
+              const imageOnLeft = i % 2 === 0;
 
               return (
                 <li
@@ -293,7 +272,6 @@ export default function Portfolio({
                     data-content
                     className="grid items-center gap-8 md:grid-cols-2 md:gap-x-28"
                   >
-                    {/* متن */}
                     <div
                       className={`order-2 ${
                         imageOnLeft ? "md:order-1" : "md:order-2"
@@ -332,7 +310,6 @@ export default function Portfolio({
                       )}
                     </div>
 
-                    {/* تصویر */}
                     <div
                       className={`order-1 aspect-[4/3] overflow-hidden rounded-2xl border border-[var(--color-surface)] bg-[var(--color-secondary)] ${
                         imageOnLeft ? "md:order-2" : "md:order-1"
