@@ -26,19 +26,19 @@ const defaultTeam = {
 
 const defaultMembers = [
   {
-    name: "th0mas",
+    name: "ســـام",
     role: "Designer",
     bio: "اینجا هم معرفی کوتاه رفیقت: تخصصش، سبک کارش و چیزی که باعث می‌شه با هم تیم خوبی باشید.",
     tags: ["Tailwind", "Next.js", "React"],
-    image: "",
+    image: "./lady2.jpg",
     links: [{ label: "GitHub", href: "#" }],
   },
   {
-    name: "SIR",
+    name: "مـــانـی",
     role: "Developer",
     bio: "اینجا یه معرفی کوتاه از خودت بنویس: چه کاری می‌کنی، به چی علاقه داری و چه چیزی تو کارهات برات مهمه.",
     tags: ["Motion", "Figma", "UI/UX"],
-    image: "",
+    image: "./shinoa.jpg",
     links: [{ label: "GitHub", href: "#" }],
   },
 ];
@@ -79,7 +79,8 @@ export default function About({
   team = defaultTeam,
   members = defaultMembers,
   highlights = defaultHighlights,
-  title = ["درباره", "ما."],
+  title = ["دربـاره", "مـــا"],
+ 
 }) {
   const rootRef = useRef(null);
   const gridRef = useRef(null);
@@ -421,9 +422,8 @@ export default function About({
           </div>
         </div>
         <div dir="ltr" className="min-w-0">
-          <h3 className="text-4xl font-black leading-none sm:text-5xl">
+          <h3 className="text-4xl leading-none sm:text-5xl font-lalezar!">
             {m.name}
-            <span className="text-[var(--color-primary)] [text-shadow:0_0_30px_color-mix(in_srgb,var(--color-primary)_55%,transparent)]">.</span>
           </h3>
           <p className="mt-2 flex items-center gap-2 font-mono text-xs tracking-[0.2em] opacity-70">
             <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" />
@@ -500,21 +500,23 @@ export default function About({
       />
 
       <div className="relative mx-auto max-w-6xl">
-        <header data-head>
-          <h2 className="text-6xl font-black leading-[1.15] sm:text-7xl md:text-8xl">
-            <span className="block">{title[0]}</span>
-            <span className="block text-[var(--color-primary)] [text-shadow:0_0_40px_color-mix(in_srgb,var(--color-primary)_55%,transparent)]">
-              {title[1]}
-            </span>
-          </h2>
-        </header>
+        <header data-head className="w-full text-center">
+          <div className="flex items-center justify-center gap-4">
+            <span className="h-[2px] rounded-full flex-1 max-w-24 bg-gradient-to-r from-transparent to-[var(--color-primary)] opacity-70" />
 
+            <h2 className="shrink-0 text-3xl sm:text-5xl font-lalezar!">
+              {title[0]} <span className="text-[var(--color-primary)]">{title[1]}</span>
+            </h2>
+
+            <span className="h-[2px] rounded-full flex-1 max-w-24 bg-gradient-to-l from-transparent to-[var(--color-primary)] opacity-70" />
+          </div>
+        </header>
         <div
           ref={gridRef}
           dir="ltr"
           className="relative mt-20 grid gap-10 md:grid-cols-[1fr_minmax(230px,0.55fr)_1fr] md:grid-rows-2 md:gap-x-28 md:gap-y-16"
         >
-          {/* ذرات نورانی؛ پشت باکس‌ها تا از لبه‌هایشان بیرون بزنند */}
+ 
           <canvas
             ref={canvasRef}
             aria-hidden="true"

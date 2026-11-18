@@ -249,13 +249,13 @@ export default function Portfolio({
       <div className="mx-auto max-w-5xl">
 <header className="w-full text-center">
   <div className="flex items-center justify-center gap-4">
-    <span className="h-px flex-1 max-w-24 bg-gradient-to-r from-transparent to-[var(--color-primary)] opacity-70" />
+    <span className="h-[2px] rounded-full flex-1 max-w-24 bg-gradient-to-r from-transparent to-[var(--color-primary)] opacity-70" />
 
-    <h2 className="shrink-0 text-3xl sm:text-4xl font-lalezar">
+    <h2 className="shrink-0 text-3xl sm:text-5xl font-lalezar">
       {title} <span className="text-[var(--color-primary)]">{title2}</span>
     </h2>
 
-    <span className="h-px flex-1 max-w-24 bg-gradient-to-l from-transparent to-[var(--color-primary)] opacity-70" />
+    <span className="h-[2px] rounded-full flex-1 max-w-24 bg-gradient-to-l from-transparent to-[var(--color-primary)] opacity-70" />
   </div>
 
   <p className="mt-4 leading-8 opacity-70">{subtitle}</p>
