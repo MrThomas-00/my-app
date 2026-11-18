@@ -1,5 +1,5 @@
 import { Geist, Geist_Mono, Lalezar, Michroma,Vazirmatn } from "next/font/google";
-
+import Loader from "@/components/Loader"
 import "./globals.css";
 import Header from "@/app/layout/header";
 import Footer from "@/app/layout/footer";
@@ -45,6 +45,7 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col">
         <SmoothScroll>
+        <Loader />
           <Header />
           {children}
           <Footer />
