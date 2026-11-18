@@ -484,16 +484,14 @@ export default function About({
       ref={rootRef}
       id="about"
       dir="rtl"
-      className="relative overflow-hidden bg-[var(--color-bg)] px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
+      className="relative overflow-hidden px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
     >
+      <div className="w-full bg-black/60  h-1/2 inset-0 absolute mask-b-from-2.5"></div>
       <style>{`
         @keyframes siryx-ring { 0% { transform: scale(1); opacity: .7 } 100% { transform: scale(1.6); opacity: 0 } }
         @keyframes siryx-spin { to { transform: rotate(360deg) } }
       `}</style>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(var(--color-surface)_1px,transparent_1px),linear-gradient(90deg,var(--color-surface)_1px,transparent_1px)] bg-[size:64px_64px] opacity-20 [mask-image:radial-gradient(ellipse_at_top,black,transparent_75%)]"
-      />
+
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_100%_0%,color-mix(in_srgb,var(--color-primary)_16%,transparent),transparent)]"
