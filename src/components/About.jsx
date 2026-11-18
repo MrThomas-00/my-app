@@ -9,7 +9,8 @@ gsap.registerPlugin(ScrollTrigger);
 /**
  * سکشن «درباره ما» — هاب مرکزی SIRYX + چهار باکس
  *
- * - بدون نقطه؛ خطوط سبز با گرادیانِ محو شونده‌ی دو سر، فید‌این و یک پالس نوریِ متحرک
+ * - بدون نقطه؛ خطوط سبز با گرادیانِ محو شونده‌ی دو سر، فید‌این
+ * - دنباله‌ی نوریِ سفید که روی هر خط می‌دود، وارد هاب می‌شود و هاب نبض می‌زند
  * - ذرات ریز نورانی (کانواس) که تصادفی از دور باکس‌ها بیرون می‌زنند و محو می‌شوند
  *
  * رنگ‌ها در globals.css:
@@ -66,6 +67,13 @@ const boxBase =
   "relative h-full bg-[var(--color-secondary)] p-7 shadow-[0_0_0_1px_var(--color-surface),0_0_0_7px_var(--color-bg),0_0_0_8px_var(--color-surface)] transition-[border-radius,box-shadow] duration-500 hover:shadow-[0_0_0_1px_var(--color-primary),0_0_0_7px_var(--color-bg),0_0_0_8px_var(--color-primary),0_0_60px_-14px_var(--color-primary)]";
 
 const PAD = 90; // حاشیه‌ی اضافه‌ی کانواس تا نور بیرون‌زده بریده نشود
+
+// لایه‌های دنباله‌ی نور: l = طول (نسبت به کل خط)، دم کم‌رنگ و بلند ← سرِ سفید و کوتاه
+const COMET = [
+  { l: 0.22, w: 2.5, o: 0.22, c: "var(--color-primary)" },
+  { l: 0.1, w: 3.5, o: 0.55, c: "var(--color-primary)" },
+  { l: 0.04, w: 4.5, o: 1, c: "var(--color-text)" },
+];
 
 export default function About({
   team = defaultTeam,
@@ -182,14 +190,17 @@ export default function About({
     return () => ctx.revert();
   }, [members, highlights]);
 
-  // ---------- خطوط: فید‌این + پالس نوری ----------
+  // ---------- خطوط: فید‌این + دنباله‌ی نوریِ سفید که وارد هاب می‌شود و هاب نبض می‌زند ----------
   useIsoLayoutEffect(() => {
     if (paths.length === 0) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const ctx = gsap.context(() => {
+      const grid = gridRef.current;
+      const count = paths.length;
+
       const tl = gsap.timeline({
-        scrollTrigger: { trigger: gridRef.current, start: "top 70%" },
+        scrollTrigger: { trigger: grid, start: "top 70%" },
       });
 
       tl.fromTo(
@@ -199,29 +210,66 @@ export default function About({
         0.4
       );
 
-      // بسته‌ی نوری: از زیر باکس کناری بیرون می‌آید، روی خط می‌رود و داخل هاب محو می‌شود
-      const glow = gridRef.current.querySelector("[data-hubglow]");
-      gsap.utils.toArray("[data-pulse]").forEach((el, i) => {
-        const travel = 1.3 + Math.random() * 0.5;
-        const p = gsap.timeline({
+      // نبض هاب: وقتی سرِ نور به هاب می‌رسد
+      //   فشردگی/بزرگ شدن کوتاه، موج حلقه‌ای، فلاش نور و درخشان شدن اسم
+      const hub = grid.querySelector("[data-hub]");
+      const ring = grid.querySelector("[data-hubring]");
+      const glow = grid.querySelector("[data-hubglow]");
+      const name = grid.querySelector("[data-hubname]");
+
+      const beat = gsap.timeline({ paused: true });
+      beat
+        .fromTo(hub, { scale: 1 }, { scale: 1.045, duration: 0.14, ease: "power2.out" }, 0)
+        .to(hub, { scale: 1, duration: 0.6, ease: "elastic.out(1, 0.4)" }, 0.14)
+        .fromTo(glow, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.12, ease: "power2.out" }, 0)
+        .to(glow, { autoAlpha: 0, duration: 0.7, ease: "power2.in" }, 0.12)
+        .fromTo(ring, { autoAlpha: 0.8, scale: 1 }, { autoAlpha: 0, scale: 1.35, duration: 0.9, ease: "power2.out" }, 0)
+        .fromTo(name, { filter: "brightness(1.9)" }, { filter: "brightness(1)", duration: 0.7, ease: "power2.out" }, 0);
+
+      // دنباله‌ی نور روی هر خط: از زیر باکس کناری بیرون می‌آید، با شتاب می‌رود و داخل هاب می‌شود
+      for (let i = 0; i < count; i++) {
+        const els = Array.from(grid.querySelectorAll(`[data-comet="${i}"]`));
+        if (!els.length) continue;
+
+        const lens = els.map((el) => parseFloat(el.dataset.len));
+        const total = 1 + Math.max(...lens);
+        const state = { e: 0 }; // موقعیت سرِ نور روی خط (۰ تا ۱)
+        let hit = false;
+
+        const cycle = gsap.timeline({
           paused: true,
           repeat: -1,
           repeatDelay: 1.2 + Math.random() * 2.2,
         });
-        p.set(el, { autoAlpha: 0, strokeDashoffset: 0.1 })
-          .to(el, { autoAlpha: 1, duration: 0.12 })
-          .to(el, { strokeDashoffset: -1, duration: travel, ease: "power2.inOut" }, "<")
-          .to(el, { autoAlpha: 0, duration: 0.08 }, `>-0.08`);
-        if (glow) {
-          p.fromTo(
-            glow,
-            { autoAlpha: 0 },
-            { autoAlpha: 0.9, duration: 0.2, yoyo: true, repeat: 1, ease: "power2.out" },
-            travel - 0.25
-          );
-        }
-        tl.add(() => p.play(), 1.8 + i * 0.7 + Math.random() * 0.6);
-      });
+
+        cycle
+          .call(() => { hit = false; }, null, 0)
+          .set(els, { visibility: "visible" }, 0)
+          .fromTo(
+            state,
+            { e: 0 },
+            {
+              e: total,
+              duration: 1.4 + Math.random() * 0.5,
+              ease: "power2.in",
+              onUpdate: () => {
+                els.forEach((el, k) => {
+                  // سرِ همه‌ی لایه‌ها روی یک نقطه می‌ماند؛ فقط طول دم فرق دارد
+                  el.style.strokeDashoffset = lens[k] - state.e;
+                });
+                // وقتی سر به لبه‌ی هاب رسید، هاب نبض بزند
+                if (!hit && state.e >= 0.95) {
+                  hit = true;
+                  beat.restart();
+                }
+              },
+            },
+            0
+          )
+          .set(els, { visibility: "hidden" });
+
+        tl.add(() => cycle.play(), 1.8 + i * 0.7 + Math.random() * 0.6);
+      }
     }, rootRef);
 
     return () => ctx.revert();
@@ -520,18 +568,24 @@ export default function About({
                     strokeLinecap="round"
                     style={{ filter: "drop-shadow(0 0 6px var(--color-primary))" }}
                   />
-                  <path
-                    d={p.d}
-                    data-pulse
-                    pathLength="1"
-                    strokeDasharray="0.07 1.3"
-                    strokeDashoffset="0.1"
-                    fill="none"
-                    stroke="var(--color-text)"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    style={{ opacity: 0, visibility: "hidden", filter: "drop-shadow(0 0 7px var(--color-primary))" }}
-                  />
+                  {/* دنباله‌ی نور: دم کم‌رنگ + میانه + سرِ سفید (جهت: از باکس کناری به سمت هاب) */}
+                  {COMET.map((c, k) => (
+                    <path
+                      key={k}
+                      d={p.d}
+                      data-comet={i}
+                      data-len={c.l}
+                      pathLength="1"
+                      strokeDasharray={`${c.l} 3`}
+                      strokeDashoffset={c.l}
+                      fill="none"
+                      stroke={c.c}
+                      strokeOpacity={c.o}
+                      strokeWidth={c.w}
+                      strokeLinecap="round"
+                      style={{ visibility: "hidden", filter: "drop-shadow(0 0 7px var(--color-primary))" }}
+                    />
+                  ))}
                 </g>
               ))}
             </svg>
@@ -555,13 +609,21 @@ export default function About({
               data-hub
               className="relative rounded-[1rem_2.5rem_2.5rem_2.5rem] bg-[var(--color-bg)] p-7 text-center shadow-[0_0_0_1px_var(--color-primary),0_0_0_8px_var(--color-bg),0_0_0_9px_color-mix(in_srgb,var(--color-primary)_40%,transparent),0_0_80px_-16px_var(--color-primary)]"
             >
+              {/* فلاش نور هنگام نبض */}
               <span
                 data-hubglow
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 shadow-[0_0_55px_6px_var(--color-primary)]"
                 style={{ visibility: "hidden" }}
               />
-              <p dir="ltr" className="text-4xl font-black leading-none tracking-tight sm:text-5xl">
+              {/* موج حلقه‌ای که هنگام نبض از هاب بیرون می‌رود */}
+              <span
+                data-hubring
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-[inherit] border-2 border-[var(--color-primary)] opacity-0"
+                style={{ visibility: "hidden" }}
+              />
+              <p data-hubname dir="ltr" className="text-4xl font-black leading-none tracking-tight sm:text-5xl">
                 {team.name}
                 <span className="text-[var(--color-primary)] [text-shadow:0_0_30px_color-mix(in_srgb,var(--color-primary)_60%,transparent)]">.</span>
               </p>

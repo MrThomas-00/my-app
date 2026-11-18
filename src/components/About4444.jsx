@@ -112,9 +112,10 @@ export default function About({
       if (!r) return null;
       const [side, p] = anchors[i];
       const fromLeftBox = i % 2 === 0;
-      const x1 = fromLeftBox ? r.x + r.w + 8 : r.x - 8; // لبه‌ی حلقه‌ی بیرونی باکس
+      // ابتدا و انتهای خط کمی زیر باکس‌ها می‌رود (باکس‌ها روی SVG هستند)
+      const x1 = fromLeftBox ? r.x + r.w - 14 : r.x + 14;
       const y1 = r.y + r.h / 2;
-      const x2 = (side === "l" ? hubR.x : hubR.x + hubR.w) + (side === "l" ? -8 : 8);
+      const x2 = side === "l" ? hubR.x + 14 : hubR.x + hubR.w - 14;
       const y2 = hubR.y + hubR.h * p;
       const mx = (x1 + x2) / 2;
       return { d: `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`, x1, x2 };
@@ -198,22 +199,28 @@ export default function About({
         0.4
       );
 
+      // بسته‌ی نوری: از زیر باکس کناری بیرون می‌آید، روی خط می‌رود و داخل هاب محو می‌شود
+      const glow = gridRef.current.querySelector("[data-hubglow]");
       gsap.utils.toArray("[data-pulse]").forEach((el, i) => {
-        tl.add(() => {
-          gsap.set(el, { autoAlpha: 1 });
-          gsap.fromTo(
-            el,
-            { strokeDashoffset: 0.12 },
-            {
-              strokeDashoffset: -1,
-              duration: 2.6 + Math.random() * 1.6,
-              ease: "none",
-              repeat: -1,
-              repeatDelay: 0.4 + Math.random() * 1.2,
-              delay: i * 0.35,
-            }
+        const travel = 1.3 + Math.random() * 0.5;
+        const p = gsap.timeline({
+          paused: true,
+          repeat: -1,
+          repeatDelay: 1.2 + Math.random() * 2.2,
+        });
+        p.set(el, { autoAlpha: 0, strokeDashoffset: 0.1 })
+          .to(el, { autoAlpha: 1, duration: 0.12 })
+          .to(el, { strokeDashoffset: -1, duration: travel, ease: "power2.inOut" }, "<")
+          .to(el, { autoAlpha: 0, duration: 0.08 }, `>-0.08`);
+        if (glow) {
+          p.fromTo(
+            glow,
+            { autoAlpha: 0 },
+            { autoAlpha: 0.9, duration: 0.2, yoyo: true, repeat: 1, ease: "power2.out" },
+            travel - 0.25
           );
-        }, 1.8);
+        }
+        tl.add(() => p.play(), 1.8 + i * 0.7 + Math.random() * 0.6);
       });
     }, rootRef);
 
@@ -334,14 +341,36 @@ export default function About({
       }`}
     >
       <div className="flex items-center gap-5">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[1.3rem_1.3rem_1.3rem_0.4rem] bg-[var(--color-bg)] ring-1 ring-[var(--color-primary)] transition-[border-radius] duration-500 group-hover:rounded-full">
-          {m.image ? (
-            <img src={m.image} alt={m.name} loading="lazy" className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-3xl font-black text-[var(--color-primary)]">
-              {m.name.slice(0, 1).toUpperCase()}
-            </span>
-          )}
+        {/* آواتار: هنگام هاور شکل مربع‌گرد → دایره، حلقه‌ی چرخان و دو موج نوری */}
+        <div className="relative h-20 w-20 shrink-0">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-[1.3rem_1.3rem_1.3rem_0.4rem] border border-[var(--color-primary)] opacity-0 transition-[border-radius] duration-500 group-hover:rounded-[2.5rem] group-hover:[animation:siryx-ring_1.8s_ease-out_infinite]"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-[1.3rem_1.3rem_1.3rem_0.4rem] border border-[var(--color-primary)] opacity-0 transition-[border-radius] duration-500 group-hover:rounded-[2.5rem] group-hover:[animation:siryx-ring_1.8s_ease-out_0.9s_infinite]"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-[3px] overflow-hidden rounded-[1.5rem_1.5rem_1.5rem_0.6rem] opacity-0 transition-[opacity,border-radius] duration-500 group-hover:rounded-[2.75rem] group-hover:opacity-100"
+          >
+            <span className="absolute -inset-1/2 [animation:siryx-spin_2.4s_linear_infinite] [background:conic-gradient(from_0deg,transparent_0_65%,var(--color-primary)_100%)]" />
+          </span>
+          <div className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden rounded-[1.3rem_1.3rem_1.3rem_0.4rem] bg-[var(--color-bg)] ring-1 ring-[var(--color-primary)] transition-[border-radius,transform] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-[1.06] group-hover:rounded-[2.5rem]">
+            {m.image ? (
+              <img
+                src={m.image}
+                alt={m.name}
+                loading="lazy"
+                className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+              />
+            ) : (
+              <span className="text-3xl font-black text-[var(--color-primary)] transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-125">
+                {m.name.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+          </div>
         </div>
         <div dir="ltr" className="min-w-0">
           <h3 className="text-4xl font-black leading-none sm:text-5xl">
@@ -409,6 +438,10 @@ export default function About({
       dir="rtl"
       className="relative overflow-hidden bg-[var(--color-bg)] px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
     >
+      <style>{`
+        @keyframes siryx-ring { 0% { transform: scale(1); opacity: .7 } 100% { transform: scale(1.6); opacity: 0 } }
+        @keyframes siryx-spin { to { transform: rotate(360deg) } }
+      `}</style>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[linear-gradient(var(--color-surface)_1px,transparent_1px),linear-gradient(90deg,var(--color-surface)_1px,transparent_1px)] bg-[size:64px_64px] opacity-20 [mask-image:radial-gradient(ellipse_at_top,black,transparent_75%)]"
@@ -491,12 +524,13 @@ export default function About({
                     d={p.d}
                     data-pulse
                     pathLength="1"
-                    strokeDasharray="0.1 2"
+                    strokeDasharray="0.07 1.3"
+                    strokeDashoffset="0.1"
                     fill="none"
                     stroke="var(--color-text)"
-                    strokeWidth="3"
+                    strokeWidth="3.5"
                     strokeLinecap="round"
-                    style={{ opacity: 0, filter: "drop-shadow(0 0 8px var(--color-primary))" }}
+                    style={{ opacity: 0, visibility: "hidden", filter: "drop-shadow(0 0 7px var(--color-primary))" }}
                   />
                 </g>
               ))}
@@ -519,8 +553,14 @@ export default function About({
             <div
               ref={hubRef}
               data-hub
-              className="rounded-[1rem_2.5rem_2.5rem_2.5rem] bg-[var(--color-bg)] p-7 text-center shadow-[0_0_0_1px_var(--color-primary),0_0_0_8px_var(--color-bg),0_0_0_9px_color-mix(in_srgb,var(--color-primary)_40%,transparent),0_0_80px_-16px_var(--color-primary)]"
+              className="relative rounded-[1rem_2.5rem_2.5rem_2.5rem] bg-[var(--color-bg)] p-7 text-center shadow-[0_0_0_1px_var(--color-primary),0_0_0_8px_var(--color-bg),0_0_0_9px_color-mix(in_srgb,var(--color-primary)_40%,transparent),0_0_80px_-16px_var(--color-primary)]"
             >
+              <span
+                data-hubglow
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 shadow-[0_0_55px_6px_var(--color-primary)]"
+                style={{ visibility: "hidden" }}
+              />
               <p dir="ltr" className="text-4xl font-black leading-none tracking-tight sm:text-5xl">
                 {team.name}
                 <span className="text-[var(--color-primary)] [text-shadow:0_0_30px_color-mix(in_srgb,var(--color-primary)_60%,transparent)]">.</span>

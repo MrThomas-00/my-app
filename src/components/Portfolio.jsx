@@ -132,6 +132,7 @@ export default function Portfolio({
         gsap.set("[data-ring]", { attr: { r: 9 } });
         gsap.set("[data-core]", { attr: { r: 4.5 } });
         gsap.set("[data-junction]", { scaleX: 1 });
+        gsap.set("[data-light]", { opacity: 1 });
         return;
       }
 
@@ -151,22 +152,42 @@ export default function Portfolio({
         }
       );
 
-      // خط افقی پایین سکشن: وقتی خط عمودی رسید، از نقطه‌ی اتصال به چپ و راست پر می‌شود
-      gsap.fromTo(
-        "[data-junction]",
-        { scaleX: 0, transformOrigin: `${geo.jx}px 50%` },
-        {
-          scaleX: 1,
-          duration: 0.9,
-          ease: "power3.out",
+      // خط افقی پایین سکشن: یک تایم‌لاین واحد
+      //   ۱) خط از نقطه‌ی اتصال به چپ و راست پر می‌شود
+      //   ۲) بعد از کامل شدن خط، نور (به سمت بالا) روشن می‌شود
+      //   ۳) بعد جرقه‌های نور شروع به دویدن می‌کنند
+      const root = rootRef.current;
+      const junctionEl = root.querySelector("[data-junction]");
+      const light = root.querySelector("[data-light]");
+      const glintR = root.querySelector("[data-glint-r]");
+      const glintL = root.querySelector("[data-glint-l]");
+      const sectionW = root.clientWidth;
+
+      const glints = gsap.timeline({ paused: true, repeat: -1, repeatDelay: 1.4 });
+      glints
+        .fromTo(glintR, { x: 0 }, { x: sectionW - geo.jx, duration: 2.4, ease: "power2.in" }, 0)
+        .fromTo(glintL, { x: 0 }, { x: -geo.jx, duration: 2.4, ease: "power2.in" }, 0)
+        .fromTo([glintR, glintL], { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power1.out" }, 0)
+        .to([glintR, glintL], { opacity: 0, duration: 0.7, ease: "power1.in" }, 1.7);
+
+      gsap
+        .timeline({
+          paused: true,
           scrollTrigger: {
-            trigger: "[data-junction]",
+            trigger: junctionEl,
             start: "top center",
             toggleActions: "play none none reverse",
-            invalidateOnRefresh: true,
+            onLeaveBack: () => glints.pause(0),
           },
-        }
-      );
+          onComplete: () => glints.restart(),
+          onReverseComplete: () => glints.pause(0),
+        })
+        .fromTo(
+          junctionEl,
+          { scaleX: 0, transformOrigin: `${geo.jx}px 50%` },
+          { scaleX: 1, duration: 0.9, ease: "power3.out" }
+        )
+        .fromTo(light, { opacity: 0 }, { opacity: 1, duration: 1, ease: "power2.out" });
 
       items.forEach((item, i) => {
         const content = item.querySelector("[data-content]");
@@ -398,12 +419,40 @@ export default function Portfolio({
         </div>
       </div>
 
+      {/* خط اتصال به سکشن بعدی: خط عمودی به اینجا می‌چسبد و از وسط به چپ و راست پر می‌شود */}
       <div
         aria-hidden="true"
         data-junction
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[2px] bg-[linear-gradient(90deg,transparent,var(--color-primary)_8%,var(--color-primary)_92%,transparent)] opacity-70 [box-shadow:0_-2px_14px_1px_color-mix(in_srgb,var(--color-primary)_35%,transparent)]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-0"
         style={{ transform: "scaleX(0)", transformOrigin: `${geo.jx}px 50%` }}
-      />
+      >
+        {/* خط اصلی (بدون نور؛ نور بعد از کامل شدن خط روشن می‌شود) */}
+        <div className="absolute inset-x-0 bottom-0 h-[2px] bg-[linear-gradient(90deg,transparent,var(--color-primary)_8%,var(--color-primary)_92%,transparent)] opacity-70" />
+
+        {/* نور: فقط به سمت بالا */}
+        <div data-light className="absolute inset-0 opacity-0">
+          {/* هاله‌ی نوری که از خط به بالا می‌رود */}
+          <div className="absolute inset-x-0 bottom-0 h-10 bg-[linear-gradient(to_top,color-mix(in_srgb,var(--color-primary)_28%,transparent),transparent)] [mask-image:linear-gradient(90deg,transparent,black_12%,black_88%,transparent)]" />
+
+          {/* درخشش خط (به سمت بالا) */}
+          <div className="absolute inset-x-0 bottom-0 h-[2px] [box-shadow:0_-6px_20px_0_color-mix(in_srgb,var(--color-primary)_55%,transparent)]" />
+
+          {/* برق سفید باریک وسط خط */}
+          <div className="absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-text)_20%,var(--color-text)_80%,transparent)] opacity-70" />
+
+          {/* جرقه‌های نور که روی خط به چپ و راست می‌دوند */}
+          <div
+            data-glint-r
+            className="absolute bottom-0 h-[3px] w-40 rounded-full bg-[linear-gradient(90deg,transparent,var(--color-primary)_60%,var(--color-text))] opacity-0 [box-shadow:0_-4px_14px_0_color-mix(in_srgb,var(--color-primary)_60%,transparent)]"
+            style={{ left: geo.jx }}
+          />
+          <div
+            data-glint-l
+            className="absolute bottom-0 h-[3px] w-40 rounded-full bg-[linear-gradient(270deg,transparent,var(--color-primary)_60%,var(--color-text))] opacity-0 [box-shadow:0_-4px_14px_0_color-mix(in_srgb,var(--color-primary)_60%,transparent)]"
+            style={{ left: geo.jx - 160 }}
+          />
+        </div>
+      </div>
     </section>
   );
 }
