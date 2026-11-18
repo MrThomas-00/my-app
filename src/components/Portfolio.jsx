@@ -225,12 +225,12 @@ export default function Portfolio({
       ref={rootRef}
       id="portfolio"
       dir="rtl"
-      className="relative isolate overflow-hidden bg-[var(--color-bg)] px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
+      className="relative isolate overflow-hidden  px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
     >
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(var(--color-border)_1px,transparent_1px),linear-gradient(90deg,var(--color-border)_1px,transparent_1px)] bg-[size:56px_56px] opacity-30"
+        className="pointer-events-none absolute inset-0 -z-10  opacity-30"
         style={{
           WebkitMaskImage:
             "linear-gradient(to right, transparent, black 30%, black 70%, transparent), linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)",
@@ -241,10 +241,6 @@ export default function Portfolio({
         }}
       />
 
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-28 -top-28 -z-10 h-80 w-80 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-primary)_20%,transparent),transparent_70%)] md:h-[26rem] md:w-[26rem]"
-      />
 
       <div className="mx-auto max-w-5xl">
 <header className="w-full text-center">
