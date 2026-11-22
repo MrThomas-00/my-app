@@ -6,17 +6,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/**
- * سکشن «درباره ما» — هاب مرکزی SIRYX + چهار باکس
- *
- * - بدون نقطه؛ خطوط سبز با گرادیانِ محو شونده‌ی دو سر، فید‌این
- * - دنباله‌ی نوریِ سفید که روی هر خط می‌دود، وارد هاب می‌شود و هاب نبض می‌زند
- * - ذرات ریز نورانی (کانواس) که تصادفی از دور باکس‌ها بیرون می‌زنند و محو می‌شوند
- *
- * رنگ‌ها در globals.css:
- *   --color-primary / --color-bg / --color-secondary / --color-surface / --color-text
- */
-
 const defaultTeam = {
   name: "SIRYX",
   tagline: "دو نفر، یک استودیو.",
@@ -66,9 +55,8 @@ const tagStyles = [
 const boxBase =
   "relative h-full bg-[var(--color-secondary)] p-7 shadow-[0_0_0_1px_var(--color-surface),0_0_0_7px_var(--color-bg),0_0_0_8px_var(--color-surface)] transition-[border-radius,box-shadow] duration-500 hover:shadow-[0_0_0_1px_var(--color-primary),0_0_0_7px_var(--color-bg),0_0_0_8px_var(--color-primary),0_0_60px_-14px_var(--color-primary)]";
 
-const PAD = 90; // حاشیه‌ی اضافه‌ی کانواس تا نور بیرون‌زده بریده نشود
+const PAD = 90;
 
-// لایه‌های دنباله‌ی نور: l = طول (نسبت به کل خط)، دم کم‌رنگ و بلند ← سرِ سفید و کوتاه
 const COMET = [
   { l: 0.22, w: 2.5, o: 0.22, c: "var(--color-primary)" },
   { l: 0.1, w: 3.5, o: 0.55, c: "var(--color-primary)" },
@@ -80,14 +68,13 @@ export default function About({
   members = defaultMembers,
   highlights = defaultHighlights,
   title = ["دربـاره", "مـــا"],
- 
 }) {
   const rootRef = useRef(null);
   const gridRef = useRef(null);
   const hubRef = useRef(null);
   const canvasRef = useRef(null);
-  const nodeRefs = useRef([]); // [TL, TR, BL, BR]
-  const boxesRef = useRef([]); // مستطیل همه‌ی باکس‌ها نسبت به گرید
+  const nodeRefs = useRef([]);
+  const boxesRef = useRef([]);
   const sizeRef = useRef({ w: 0, h: 0 });
   const [paths, setPaths] = useState([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -114,14 +101,12 @@ export default function About({
       return;
     }
 
-    // نقطه‌ی اتصال روی هاب: [سمت، درصد ارتفاع]
     const anchors = [["l", 0.32], ["r", 0.32], ["l", 0.68], ["r", 0.68]];
 
     const next = cardRs.map((r, i) => {
       if (!r) return null;
       const [side, p] = anchors[i];
       const fromLeftBox = i % 2 === 0;
-      // ابتدا و انتهای خط کمی زیر باکس‌ها می‌رود (باکس‌ها روی SVG هستند)
       const x1 = fromLeftBox ? r.x + r.w - 14 : r.x + 14;
       const y1 = r.y + r.h / 2;
       const x2 = side === "l" ? hubR.x + 14 : hubR.x + hubR.w - 14;
@@ -144,7 +129,6 @@ export default function About({
     };
   }, [measure, members, highlights]);
 
-  // ---------- انیمیشن ورود (هدر، هاب، باکس‌ها) ----------
   useIsoLayoutEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -191,7 +175,6 @@ export default function About({
     return () => ctx.revert();
   }, [members, highlights]);
 
-  // ---------- خطوط: فید‌این + دنباله‌ی نوریِ سفید که وارد هاب می‌شود و هاب نبض می‌زند ----------
   useIsoLayoutEffect(() => {
     if (paths.length === 0) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -211,8 +194,6 @@ export default function About({
         0.4
       );
 
-      // نبض هاب: وقتی سرِ نور به هاب می‌رسد
-      //   فشردگی/بزرگ شدن کوتاه، موج حلقه‌ای، فلاش نور و درخشان شدن اسم
       const hub = grid.querySelector("[data-hub]");
       const ring = grid.querySelector("[data-hubring]");
       const glow = grid.querySelector("[data-hubglow]");
@@ -227,14 +208,13 @@ export default function About({
         .fromTo(ring, { autoAlpha: 0.8, scale: 1 }, { autoAlpha: 0, scale: 1.35, duration: 0.9, ease: "power2.out" }, 0)
         .fromTo(name, { filter: "brightness(1.9)" }, { filter: "brightness(1)", duration: 0.7, ease: "power2.out" }, 0);
 
-      // دنباله‌ی نور روی هر خط: از زیر باکس کناری بیرون می‌آید، با شتاب می‌رود و داخل هاب می‌شود
       for (let i = 0; i < count; i++) {
         const els = Array.from(grid.querySelectorAll(`[data-comet="${i}"]`));
         if (!els.length) continue;
 
         const lens = els.map((el) => parseFloat(el.dataset.len));
         const total = 1 + Math.max(...lens);
-        const state = { e: 0 }; // موقعیت سرِ نور روی خط (۰ تا ۱)
+        const state = { e: 0 };
         let hit = false;
 
         const cycle = gsap.timeline({
@@ -255,10 +235,8 @@ export default function About({
               ease: "power2.in",
               onUpdate: () => {
                 els.forEach((el, k) => {
-                  // سرِ همه‌ی لایه‌ها روی یک نقطه می‌ماند؛ فقط طول دم فرق دارد
                   el.style.strokeDashoffset = lens[k] - state.e;
                 });
-                // وقتی سر به لبه‌ی هاب رسید، هاب نبض بزند
                 if (!hit && state.e >= 0.95) {
                   hit = true;
                   beat.restart();
@@ -276,7 +254,6 @@ export default function About({
     return () => ctx.revert();
   }, [paths.length]);
 
-  // ---------- ذرات نورانی تصادفی دور باکس‌ها ----------
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const canvas = canvasRef.current;
@@ -390,7 +367,6 @@ export default function About({
       }`}
     >
       <div className="flex items-center gap-5">
-        {/* آواتار: هنگام هاور شکل مربع‌گرد → دایره، حلقه‌ی چرخان و دو موج نوری */}
         <div className="relative h-20 w-20 shrink-0">
           <span
             aria-hidden="true"
@@ -486,7 +462,7 @@ export default function About({
       dir="rtl"
       className="relative overflow-hidden px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
     >
-      <div className="w-full bg-black/60  h-1/2 inset-0 absolute mask-b-from-2.5"></div>
+      <div className="w-full  h-1/2 inset-0 absolute mask-b-from-2.5"></div>
       <style>{`
         @keyframes siryx-ring { 0% { transform: scale(1); opacity: .7 } 100% { transform: scale(1.6); opacity: 0 } }
         @keyframes siryx-spin { to { transform: rotate(360deg) } }
@@ -514,7 +490,7 @@ export default function About({
           dir="ltr"
           className="relative mt-20 grid gap-10 md:grid-cols-[1fr_minmax(230px,0.55fr)_1fr] md:grid-rows-2 md:gap-x-28 md:gap-y-16"
         >
- 
+
           <canvas
             ref={canvasRef}
             aria-hidden="true"
@@ -522,14 +498,12 @@ export default function About({
             style={{ left: -PAD, top: -PAD }}
           />
 
-          {/* خط عمودی موبایل */}
           <div
             aria-hidden="true"
             data-vline
             className="absolute bottom-0 left-1/2 top-0 z-0 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-[var(--color-primary)] to-transparent opacity-0 shadow-[0_0_14px_var(--color-primary)] md:hidden"
           />
 
-          {/* خطوط دسکتاپ */}
           {paths.length > 0 && (
             <svg
               aria-hidden="true"
@@ -568,7 +542,6 @@ export default function About({
                     strokeLinecap="round"
                     style={{ filter: "drop-shadow(0 0 6px var(--color-primary))" }}
                   />
-                  {/* دنباله‌ی نور: دم کم‌رنگ + میانه + سرِ سفید (جهت: از باکس کناری به سمت هاب) */}
                   {COMET.map((c, k) => (
                     <path
                       key={k}
@@ -591,7 +564,6 @@ export default function About({
             </svg>
           )}
 
-          {/* بالا: اعضا */}
           <div dir="rtl" className="relative z-10 md:col-start-1 md:row-start-1">
             {renderMember(members[0], 0, setNode(0))}
           </div>
@@ -599,7 +571,6 @@ export default function About({
             {renderMember(members[1], 1, setNode(1))}
           </div>
 
-          {/* وسط: هاب تیم */}
           <div
             dir="rtl"
             className="relative z-10 order-first md:order-none md:col-start-2 md:row-span-2 md:row-start-1 md:self-center"
@@ -609,14 +580,12 @@ export default function About({
               data-hub
               className="relative rounded-[1rem_2.5rem_2.5rem_2.5rem] bg-[var(--color-bg)] p-7 text-center shadow-[0_0_0_1px_var(--color-primary),0_0_0_8px_var(--color-bg),0_0_0_9px_color-mix(in_srgb,var(--color-primary)_40%,transparent),0_0_80px_-16px_var(--color-primary)]"
             >
-              {/* فلاش نور هنگام نبض */}
               <span
                 data-hubglow
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 shadow-[0_0_55px_6px_var(--color-primary)]"
                 style={{ visibility: "hidden" }}
               />
-              {/* موج حلقه‌ای که هنگام نبض از هاب بیرون می‌رود */}
               <span
                 data-hubring
                 aria-hidden="true"
@@ -632,7 +601,6 @@ export default function About({
             </div>
           </div>
 
-          {/* پایین: توضیحات تیم */}
           <div dir="rtl" className="relative z-10 md:col-start-1 md:row-start-2">
             {renderInfo(highlights[0], 0, setNode(2))}
           </div>

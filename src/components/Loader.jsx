@@ -6,34 +6,11 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/**
- * لودینگ سایت: اسم تیم روی صفحه‌ی تیره ظاهر می‌شود، بعد دوربین داخل نقطه‌ی لیمویی
- * آخر اسم زوم می‌کند؛ حروف بزرگ می‌شوند، کل صفحه را می‌گیرند و مثل پنجره، سایت را نشان می‌دهند.
- *
- * استفاده (src/app/layout.js، اولین فرزندِ <body>):
- *   import Loader from "@/components/Loader";
- *   <body>
- *     <Loader />
- *     <Header />
- *     {children}
- *     <Footer />
- *   </body>
- *
- * پراپ‌ها:
- *   name            اسم نمایش داده‌شده            (پیش‌فرض "SIRYX")
- *   minDuration     حداقل زمان نمایش (میلی‌ثانیه) (پیش‌فرض 1800)
- *   oncePerSession  فقط بار اول هر نشست نمایش بده (پیش‌فرض false)
- *
- * رویدادهای window (اختیاری، برای هماهنگ کردن انیمیشن ورود سایت):
- *   "siryx:reveal"  لحظه‌ای که زوم شروع می‌شود و سایت دارد نمایان می‌شود
- *   "siryx:loaded"  لحظه‌ای که لودینگ کامل برداشته شد
- *
- * فونت: از کلاس font-michroma استفاده می‌کند (همان فونت لوگوی هدر).
- * رنگ‌ها: --color-primary / --color-bg / --color-border
- */
-
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+const GAP = 0.14;
+const DOT = 0.085;
 
 export default function Loader({
   name = "SIRYX",
@@ -45,6 +22,7 @@ export default function Loader({
 
   useIsoLayoutEffect(() => {
     if (oncePerSession && sessionStorage.getItem("siryx-loaded")) {
+      window.__siryxLoaded = true;
       setDone(true);
       return;
     }
@@ -53,11 +31,26 @@ export default function Loader({
     if (!root) return;
 
     const html = document.documentElement;
-    const prevOverflow = html.style.overflow;
-    html.style.overflow = "hidden"; // تا وقتی لودینگ هست اسکرول قفل است
+    const body = document.body;
+    const prev = {
+      html: html.style.overflow,
+      body: body.style.overflow,
+      over: html.style.overscrollBehavior,
+    };
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+    const unlock = () => {
+      html.style.overflow = prev.html;
+      body.style.overflow = prev.body;
+      html.style.overscrollBehavior = prev.over;
+    };
 
     let killed = false;
     let minTimer = 0;
+    let raf = 0;
+    let ro = null;
+    let introTl = null;
     const timelines = [];
 
     const holeG = root.querySelector("[data-hole]");
@@ -70,19 +63,28 @@ export default function Loader({
     const markText = markG.querySelector("text");
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const geo = { cx: 0, cy: 0, r: 0, barW: 0, vw: 0, vh: 0 };
+    const geo = { cx: 0, cy: 0, r: 0, barW: 0, vw: 0, vh: 0, cap: 1 };
+    const prog = { dot: 0, bar: 0 };
     let exiting = false;
 
-    // ---------- چیدمان: اسم + نقطه وسط صفحه، نوار پیشرفت زیرش ----------
+    const applyDot = () =>
+      dots.forEach((d) => d.setAttribute("r", Math.max(0, geo.r * prog.dot)));
+    const applyBar = () =>
+      bar.setAttribute("width", Math.max(0, geo.barW * prog.bar));
+
     const layout = () => {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const fs = Math.min(vw * 0.12, 160);
+      const vw = root.clientWidth || window.innerWidth;
+      const vh = root.clientHeight || window.innerHeight;
+
+      texts.forEach((t) => t.setAttribute("font-size", 100));
+      const em = markText.getComputedTextLength() / 100;
+      const targetW = Math.min(vw * 0.74, 820);
+      const fs = Math.min(targetW / (em + GAP + DOT * 2), 160, vh * 0.28);
 
       texts.forEach((t) => t.setAttribute("font-size", fs));
       const tw = markText.getComputedTextLength();
-      const r = fs * 0.085; // شعاع نقطه
-      const gap = fs * 0.14;
+      const r = fs * DOT;
+      const gap = fs * GAP;
       const total = tw + gap + r * 2;
       const x0 = (vw - total) / 2;
       const baseY = vh / 2 + fs * 0.36;
@@ -93,84 +95,92 @@ export default function Loader({
       });
 
       const cx = x0 + tw + gap + r;
-      const cy = baseY - r; // نقطه روی خط پایه می‌نشیند
+      const cy = baseY - r;
       dots.forEach((d) => {
         d.setAttribute("cx", cx);
         d.setAttribute("cy", cy);
       });
 
-      const barW = Math.min(total, vw * 0.6);
-      const barX = (vw - barW) / 2;
+      const barW = total;
       const barY = baseY + fs * 0.4;
       [track, bar].forEach((el) => {
-        el.setAttribute("x", barX);
+        el.setAttribute("x", x0);
         el.setAttribute("y", barY);
       });
       track.setAttribute("width", barW);
 
-      Object.assign(geo, { cx, cy, r, barW, vw, vh });
+      const cap = Math.max(2, (cx / (gap + r)) * 1.25);
+
+      Object.assign(geo, { cx, cy, r, barW, vw, vh, cap });
+      applyDot();
+      applyBar();
     };
 
     const setZoom = (s) => {
-      const { cx, cy } = geo;
-      const t = `translate(${cx} ${cy}) scale(${s}) translate(${-cx} ${-cy})`;
-      holeG.setAttribute("transform", t);
-      markG.setAttribute("transform", t);
+      const { cx, cy, r, cap } = geo;
+      const ts = Math.min(s, cap);
+      const tf = `translate(${cx} ${cy}) scale(${ts}) translate(${-cx} ${-cy})`;
+      texts.forEach((t) => t.setAttribute("transform", tf));
+      dots.forEach((d) => d.setAttribute("r", r * s));
     };
 
     const finish = () => {
-      html.style.overflow = prevOverflow;
+      unlock();
       if (oncePerSession) sessionStorage.setItem("siryx-loaded", "1");
+      window.__siryxLoaded = true;
       setDone(true);
       requestAnimationFrame(() => ScrollTrigger.refresh());
       window.dispatchEvent(new Event("siryx:loaded"));
     };
 
-    // ---------- ورود: اسم محو → واضح، نقطه با فنر ظاهر می‌شود، نوار پر می‌شود ----------
     const intro = () => {
-      gsap.set(dots, { attr: { r: 0 } });
-      gsap.set(bar, { attr: { width: 0 } });
+      prog.dot = 0;
+      prog.bar = 0;
+      applyDot();
+      applyBar();
 
-      timelines.push(
-        gsap
-          .timeline()
-          .fromTo(
-            markG,
-            { opacity: 0, filter: "blur(14px)" },
-            { opacity: 1, filter: "blur(0px)", duration: 0.9, ease: "power3.out", clearProps: "filter" },
-            0
-          )
-          .to(dots, { attr: { r: geo.r }, duration: 0.6, ease: "back.out(2.5)" }, 0.5)
-          .fromTo(uiG, { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.4)
-          .to(bar, { attr: { width: geo.barW * 0.9 }, duration: 1.6, ease: "power2.out" }, 0.3)
-      );
+      introTl = gsap
+        .timeline()
+        .fromTo(
+          markG,
+          { opacity: 0, filter: "blur(14px)" },
+          { opacity: 1, filter: "blur(0px)", duration: 0.9, ease: "power3.out", clearProps: "filter" },
+          0
+        )
+        .to(prog, { dot: 1, duration: 0.6, ease: "back.out(2.5)", onUpdate: applyDot }, 0.5)
+        .fromTo(uiG, { opacity: 0 }, { opacity: 1, duration: 0.5 }, 0.4)
+        .to(prog, { bar: 0.9, duration: 1.6, ease: "power2.out", onUpdate: applyBar }, 0.3);
+
+      timelines.push(introTl);
     };
 
-    // ---------- خروج: زوم داخل نقطه؛ حروف پنجره‌ی سایت می‌شوند ----------
     const exit = () => {
       if (killed) return;
       exiting = true;
 
-      const { cx, cy, r, vw, vh, barW } = geo;
+      introTl?.kill();
+      prog.dot = 1;
+      layout();
+
+      const { cx, cy, r, vw, vh } = geo;
       const D = Math.max(
         Math.hypot(cx, cy),
         Math.hypot(vw - cx, cy),
         Math.hypot(cx, vh - cy),
         Math.hypot(vw - cx, vh - cy)
       );
-      const Z = (D / r) * 1.1; // مقیاسی که نقطه کل صفحه را می‌پوشاند
+      const Z = (D / r) * 1.2;
       const zoom = { k: 0 };
 
       timelines.push(
         gsap
           .timeline({ onComplete: finish })
-          .to(bar, { attr: { width: barW }, duration: 0.3, ease: "power2.out" })
+          .to(prog, { bar: 1, duration: 0.3, ease: "power2.out", onUpdate: applyBar })
           .to(uiG, { opacity: 0, duration: 0.25 })
           .add(() => {
-            gsap.set(holeG, { opacity: 1 }); // حالا حروف و نقطه «سوراخ» می‌شوند
+            gsap.set(holeG, { opacity: 1 });
             window.dispatchEvent(new Event("siryx:reveal"));
           })
-          // زوم لگاریتمی: حس پرواز به داخل نقطه
           .to(
             zoom,
             {
@@ -181,27 +191,32 @@ export default function Loader({
             },
             ">"
           )
-          // رنگ لیمویی حروف محو می‌شود تا سایت از داخلشان دیده شود
           .to(markG, { opacity: 0, duration: 0.7, ease: "power1.in" }, "<0.45")
       );
     };
 
     const onResize = () => {
-      if (!exiting) layout();
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (!exiting && !killed) layout();
+      });
     };
 
-    // ---------- اجرا ----------
     const run = async () => {
       await new Promise((res) => requestAnimationFrame(res));
       if (document.fonts?.ready) await document.fonts.ready;
       if (killed) return;
 
       layout();
+      ro = new ResizeObserver(onResize);
+      ro.observe(root);
 
       if (reduce) {
         gsap.set([markG, uiG], { opacity: 1 });
-        gsap.set(dots, { attr: { r: geo.r } });
-        gsap.set(bar, { attr: { width: geo.barW } });
+        prog.dot = 1;
+        prog.bar = 1;
+        applyDot();
+        applyBar();
       } else {
         intro();
       }
@@ -224,15 +239,15 @@ export default function Loader({
       }
     };
 
-    window.addEventListener("resize", onResize);
     run();
 
     return () => {
       killed = true;
       window.clearTimeout(minTimer);
-      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
       timelines.forEach((t) => t && t.kill());
-      html.style.overflow = prevOverflow;
+      unlock();
     };
   }, []);
 
@@ -241,19 +256,18 @@ export default function Loader({
   return (
     <div
       ref={rootRef}
+      dir="ltr"
       role="status"
       aria-label="در حال بارگذاری"
-      className="fixed inset-0 z-[9999]"
+      className="fixed inset-0 z-[9999] touch-none overscroll-none"
     >
       <svg width="100%" height="100%" className="block" aria-hidden="true">
         <defs>
-          {/* درخششِ ملایم پشت اسم */}
           <radialGradient id="siryx-loader-glow" cx="50%" cy="50%" r="50%">
             <stop offset="0" style={{ stopColor: "var(--color-primary)", stopOpacity: 0.16 }} />
             <stop offset="1" style={{ stopColor: "var(--color-primary)", stopOpacity: 0 }} />
           </radialGradient>
 
-          {/* ماسک: همه‌چیز پوشیده است، جز حروف و نقطه که هنگام زوم «سوراخ» می‌شوند */}
           <mask id="siryx-loader-hole" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
             <rect width="100%" height="100%" fill="#fff" />
             <g data-hole style={{ opacity: 0 }}>
@@ -265,19 +279,16 @@ export default function Loader({
           </mask>
         </defs>
 
-        {/* پوشش تمام‌صفحه */}
         <g mask="url(#siryx-loader-hole)">
           <rect width="100%" height="100%" style={{ fill: "var(--color-bg)" }} />
           <rect width="100%" height="100%" fill="url(#siryx-loader-glow)" />
         </g>
 
-        {/* نوار پیشرفت */}
         <g data-ui style={{ opacity: 0 }}>
           <rect data-track height="2" rx="1" style={{ fill: "var(--color-border)" }} />
           <rect data-bar height="2" width="0" rx="1" style={{ fill: "var(--color-primary)" }} />
         </g>
 
-        {/* اسم + نقطه‌ی لیمویی (لایه‌ی دیدنی) */}
         <g data-mark style={{ opacity: 0 }}>
           <text data-t className="font-michroma" style={{ fill: "var(--color-primary)" }} x="50%" y="50%">
             {name}

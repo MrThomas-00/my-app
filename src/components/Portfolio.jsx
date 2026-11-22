@@ -1,8 +1,9 @@
 "use client";
-
+import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -21,7 +22,7 @@ const defaultProjects = [
     category: "وب‌سایت",
     tags: ["React", "Tailwind", "Node.js"],
     image: "",
-    link: "#",
+    link: "/projects",
   },
   {
     id: 2,
@@ -30,7 +31,7 @@ const defaultProjects = [
     category: "اپلیکیشن",
     tags: ["React Native", "Firebase"],
     image: "",
-    link: "#",
+    link: "/projects",
   },
   {
     id: 3,
@@ -48,7 +49,7 @@ const defaultProjects = [
     category: "وب‌سایت",
     tags: ["React", "Recharts"],
     image: "",
-    link: "#",
+    link: "/projects",
   },
   {
     id: 5,
@@ -57,7 +58,7 @@ const defaultProjects = [
     category: "وب‌سایت",
     tags: ["React", "Recharts"],
     image: "",
-    link: "#",
+    link: "/projects",
   },
 ];
 
@@ -66,6 +67,7 @@ export default function Portfolio({
   title = "نـمـونــه",
   title2 = "کــار هـا",
   subtitle = "بخشی از پروژه‌هایی که با دقت و علاقه ساخته‌ایم",
+  snap = true, // اسنپ اسکرول: هر پروژه دقیق وسط صفحه می‌نشیند
 }) {
   const rootRef = useRef(null);
   const listRef = useRef(null);
@@ -203,7 +205,9 @@ export default function Portfolio({
             paused: true,
             scrollTrigger: {
               trigger: item,
-              start: "center center",
+              // کمی قبل از وسط صفحه فعال می‌شود تا وقتی اسنپ دقیق وسط می‌نشاندش،
+              // انیمیشن حتماً پخش شده باشد (نه یک پیکسل مونده به شروع)
+              start: "center 58%",
               toggleActions: "play none none reverse",
             },
           })
@@ -215,10 +219,66 @@ export default function Portfolio({
             "<0.05"
           );
       });
+
+      // ───── اسنپ اسکرول: هر پروژه دقیق وسط صفحه می‌نشیند ─────
+      if (snap && items.length) {
+        // موقعیت اسکرولی که در آن مرکز هر پروژه وسط ویوپورت است
+        const points = () => {
+          const vh = window.innerHeight;
+          const max = ScrollTrigger.maxScroll(window);
+          return items.map((li) => {
+            const top = li.getBoundingClientRect().top + window.scrollY;
+            const y = Math.round(top + li.offsetHeight / 2 - vh / 2);
+            return Math.min(Math.max(y, 0), max);
+          });
+        };
+
+        ScrollTrigger.create({
+          trigger: "[data-list]",
+          invalidateOnRefresh: true,
+          start: () => points()[0] - window.innerHeight * 0.4,
+          end: () => points()[items.length - 1] + window.innerHeight * 0.4,
+          snap: {
+            inertia: false, // سرعت اسکرول در انتخاب نقطه دخالت نکند
+            delay: 0.12, // چند لحظه بعد از ایستادن اسکرول
+            duration: { min: 0.25, max: 0.7 },
+            ease: "power2.inOut",
+            snapTo: (progress, self) => {
+              const pts = points();
+              const first = pts[0];
+              const last = pts[pts.length - 1];
+              const span = self.end - self.start;
+              const cur = self.start + progress * span;
+              const dir = self.direction || 1; // 1 = رو به پایین، -1 = رو به بالا
+              const toProgress = (y) => (y - self.start) / span;
+
+              // بالای اولین پروژه: از بالا که میاد بنشین، به سمت بالا که میره آزاد
+              if (cur <= first) return dir > 0 ? toProgress(first) : progress;
+              // پایین آخرین پروژه: از پایین که برمی‌گرده بنشین، به سمت پایین آزاد
+              if (cur >= last) return dir < 0 ? toProgress(last) : progress;
+
+              // بین دو پروژه: اگه بیشتر از ۲۵٪ فاصله رو در جهت اسکرول رفته، برو پروژه‌ی بعدی
+              let a = 0;
+              while (a < pts.length - 2 && pts[a + 1] <= cur) a++;
+              const t = (cur - pts[a]) / (pts[a + 1] - pts[a]);
+              const target =
+                dir > 0
+                  ? t > 0.25
+                    ? pts[a + 1]
+                    : pts[a]
+                  : t < 0.75
+                  ? pts[a]
+                  : pts[a + 1];
+
+              return toProgress(target);
+            },
+          },
+        });
+      }
     }, rootRef);
 
     return () => ctx.revert();
-  }, [geo]);
+  }, [geo, snap]);
 
   return (
     <section
@@ -376,14 +436,12 @@ export default function Portfolio({
                       )}
 
                       {link && (
-                        <a
+                        <Link
                           href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="mt-6 inline-block rounded-full bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-bg)] transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
                         >
-                          مشاهده پروژه
-                        </a>
+                          مشاهده پروژه‌ها
+                        </Link>
                       )}
                     </div>
 

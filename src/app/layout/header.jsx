@@ -76,14 +76,6 @@ const prefersReduced = () =>
 
 const TAIL = 0.5
 
-const PILL_RING = {
-  padding: 1.5,
-  background: 'linear-gradient(to top, var(--color-primary), var(--color-border) 55%, transparent)',
-  WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
-  WebkitMaskComposite: 'xor',
-  mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
-  maskComposite: 'exclude',
-}
 const isPathActive = (pathname, path) => (path === '/' ? pathname === '/' : pathname.startsWith(path))
 const getInitialTheme = () => {
   try {
@@ -321,11 +313,11 @@ export default function Header() {
     drawGeometry()
 
     const ctx = gsap.context(() => {
-      gsap.set(panelRef.current, { opacity: 0 })
+      gsap.set(panelRef.current, { opacity: 0.7 })
 
       scrollTl.current = gsap
         .timeline({ paused: true, defaults: { ease: 'power3.out' } })
-        .to(panelRef.current, { opacity: 1, duration: 0.45 }, 0)
+        .to(panelRef.current, { opacity: 0.92, duration: 0.45 }, 0)
         .to(progress.current, { top: 1, duration: 1, onUpdate: applyDash }, 0)
         .to(progress.current, { bottom: 1, duration: 1, onUpdate: applyDash }, 0.12)
     }, headerRef)
@@ -425,7 +417,7 @@ export default function Header() {
         <div
           ref={panelRef}
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 rounded-2xl bg-[color-mix(in_srgb,var(--color-bg)_70%,transparent)] opacity-0 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+          className="pointer-events-none absolute inset-0 rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-bg)_92%,transparent)] opacity-70 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.35)] backdrop-blur-md"
         />
         <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
           <defs>
@@ -478,10 +470,8 @@ export default function Header() {
               <span
                 ref={pillRef}
                 aria-hidden="true"
-                className="pointer-events-none absolute left-0 top-0 h-full w-0 rounded-full bg-[var(--color-surface)] opacity-0 shadow-[0_8px_18px_-10px_color-mix(in_srgb,var(--color-primary)_70%,transparent)]"
-              >
-                <span aria-hidden="true" className="absolute inset-0 rounded-full" style={PILL_RING} />
-              </span>
+                className="pointer-events-none absolute left-0 top-0 h-full w-0 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] opacity-0"
+              />
 
               {navLinks.map((item, i) => {
                 const isActive = i === activeIndex
