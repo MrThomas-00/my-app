@@ -18,7 +18,7 @@ const defaultProjects = [
     id: 1,
     title: "فروشگاه آنلاین لوازم خانگی",
     description:
-      "طراحی و پیاده‌سازی فروشگاه با سبد خرید، فیلتر محصولات و پرداخت آنلاین.",
+      "یه فروشگاه آنلاین با سبد خرید، فیلتر محصولات و فرایند پرداخت ساده.",
     category: "وب‌سایت",
     tags: ["React", "Tailwind", "Node.js"],
     image: "",
@@ -27,7 +27,7 @@ const defaultProjects = [
   {
     id: 2,
     title: "اپلیکیشن مدیریت وظایف",
-    description: "اپلیکیشن موبایل برای مدیریت کارهای روزانه تیم‌های کوچک.",
+    description: "ابزاری برای اینکه تیم‌های کوچک کارهای روزانه‌شون رو راحت‌تر برنامه‌ریزی و پیگیری کنن.",
     category: "اپلیکیشن",
     tags: ["React Native", "Firebase"],
     image: "",
@@ -36,7 +36,7 @@ const defaultProjects = [
   {
     id: 3,
     title: "هویت بصری کافه‌رستوران",
-    description: "لوگو، منو و بسته‌بندی برای یک کافه‌رستوران در تهران.",
+    description: "طراحی هویت بصری یک کافه‌رستوران؛ از لوگو و منو تا بسته‌بندی.",
     category: "برندینگ",
     tags: ["لوگو", "منو", "بسته‌بندی"],
     image: "",
@@ -45,7 +45,7 @@ const defaultProjects = [
   {
     id: 4,
     title: "داشبورد تحلیل فروش",
-    description: "نمودارهای زنده و گزارش‌های قابل خروجی برای تیم فروش.",
+    description: "نمایش آمار فروش با نمودارهای روشن و گزارش‌هایی که راحت می‌شه خروجی گرفت.",
     category: "وب‌سایت",
     tags: ["React", "Recharts"],
     image: "",
@@ -54,7 +54,7 @@ const defaultProjects = [
   {
     id: 5,
     title: "داشبورد تحلیل فروش",
-    description: "نمودارهای زنده و گزارش‌های قابل خروجی برای تیم فروش.",
+    description: "نمایش آمار فروش با نمودارهای روشن و گزارش‌هایی که راحت می‌شه خروجی گرفت.",
     category: "وب‌سایت",
     tags: ["React", "Recharts"],
     image: "",
@@ -64,9 +64,9 @@ const defaultProjects = [
 
 export default function Portfolio({
   projects = defaultProjects,
-  title = "نـمـونــه",
-  title2 = "کــار هـا",
-  subtitle = "بخشی از پروژه‌هایی که با دقت و علاقه ساخته‌ایم",
+  title = "کار",
+  title2 = "هامون",
+  subtitle = "چندتا از پروژه‌هایی که با دقت و علاقه ساختیم.",
   snap = true, // اسنپ اسکرول: هر پروژه دقیق وسط صفحه می‌نشیند
 }) {
   const rootRef = useRef(null);
@@ -288,27 +288,19 @@ export default function Portfolio({
       className="relative isolate overflow-hidden  px-4 py-24 text-[var(--color-text)] sm:px-6 lg:px-8"
     >
 
+      {/* Dot Grid Background */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10  opacity-30"
-        style={{
-          WebkitMaskImage:
-            "linear-gradient(to right, transparent, black 30%, black 70%, transparent), linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)",
-          maskImage:
-            "linear-gradient(to right, transparent, black 30%, black 70%, transparent), linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)",
-          WebkitMaskComposite: "source-in",
-          maskComposite: "intersect",
-        }}
+        className="pointer-events-none absolute inset-0 z-0 opacity-40 [background-image:radial-gradient(circle,rgba(173,255,47,0.14)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_72%)]"
       />
 
-
-      <div className="mx-auto max-w-5xl">
+      <div className="relative z-10 mx-auto max-w-5xl">
 <header className="w-full text-center">
   <div className="flex items-center justify-center gap-4">
     <span className="h-[2px] rounded-full flex-1 max-w-24 bg-gradient-to-r from-transparent to-[var(--color-primary)] opacity-70" />
 
     <h2 className="shrink-0 text-3xl sm:text-5xl font-lalezar">
-      {title} <span className="text-[var(--color-primary)]">{title2}</span>
+      {title}{title2 ? <span className="text-[var(--color-primary)]">{title2}</span> : null}
     </h2>
 
     <span className="h-[2px] rounded-full flex-1 max-w-24 bg-gradient-to-l from-transparent to-[var(--color-primary)] opacity-70" />
@@ -440,7 +432,7 @@ export default function Portfolio({
                           href={link}
                           className="mt-6 inline-block rounded-full bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-bg)] transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)]"
                         >
-                          مشاهده پروژه‌ها
+                          دیدن پروژه
                         </Link>
                       )}
                     </div>

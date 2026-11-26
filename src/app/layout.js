@@ -1,4 +1,5 @@
-import { Geist, Geist_Mono, Lalezar, Michroma,Vazirmatn } from "next/font/google";
+import localFont from "next/font/local";
+import { Geist, Geist_Mono, Lalezar, Michroma, Vazirmatn } from "next/font/google";
 import Loader from "@/components/Loader"
 import "./globals.css";
 import Header from "@/app/layout/header";
@@ -29,6 +30,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const pioneer = localFont({
+  src: "../../public/fonts/Pioneer.ttf",
+  variable: "--font-pioneer",
+  weight: "400",
+  display: "swap",
+});
+
 export const metadata = {
   title: {
     default: "My App",
@@ -40,8 +48,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${lalezar.variable} ${michroma.variable} ${vazirmatn.variable} h-full antialiased`}
+      lang="fa"
+      data-theme="dark"
+      className={`${geistSans.variable} ${geistMono.variable} ${lalezar.variable} ${michroma.variable} ${vazirmatn.variable} ${pioneer.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <SmoothScroll>

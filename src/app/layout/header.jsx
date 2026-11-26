@@ -8,9 +8,9 @@ import gsap from 'gsap'
 
 const navLinks = [
   { label: 'خانه', path: '/', icon: 'home' },
-  { label: 'درباره ما', path: '/about', icon: 'users' },
+  { label: 'درباره‌مون', path: '/about', icon: 'users' },
   { label: 'وبلاگ', path: '/blog', icon: 'edit' },
-  { label: 'پروژه‌ها', path: '/projects', icon: 'layers' },
+  { label: 'کارهامون', path: '/projects', icon: 'layers' },
 ]
 
 const CONTACT_PATH = '/contact'
@@ -510,7 +510,7 @@ export default function Header() {
                 className={`flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-6 py-2 text-base text-[var(--color-on-primary)] shadow-[0_0_24px_var(--color-glow)] transition-[box-shadow,filter] duration-300 hover:shadow-[0_0_32px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] hover:brightness-110 ${focusRing}`}
               >
                 <NavIcon name="mail" />
-                تماس با ما
+                باهامون حرف بزن
               </Link>
             </div>
 
@@ -604,7 +604,7 @@ export default function Header() {
           className="relative mb-6 mt-auto flex items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-3.5 text-center text-lg text-[var(--color-on-primary)] shadow-[0_0_24px_var(--color-glow)]"
         >
           <NavIcon name="mail" size={20} />
-          تماس با ما
+          باهامون حرف بزن
         </Link>
       </div>
     </>

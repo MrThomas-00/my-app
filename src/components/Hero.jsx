@@ -1,6 +1,7 @@
 
 "use client";
 
+import Link from 'next/link'
 import { Fragment, useEffect, useRef } from "react";
 import gsap from "gsap";
 
@@ -10,13 +11,13 @@ const LINES = [
     size: "text-[clamp(2rem,6.2vw,5.5rem)] leading-[1.2]",
   },
   {
-    text: "اثر به‌جا می‌گذاریم",
+    text: "اثر می‌ذاریم",
     size: "text-[clamp(1.55rem,4.3vw,3.8rem)] leading-[1.3]",
   },
 ];
 
 const ACCENT = "اثر";
-const SUBTITLE = "از یک ایده ساده تا تجربه‌ای که فراموش نمی‌شود";
+const SUBTITLE = "از یه ایده شروع می‌کنیم و با طراحی و توسعه، بهش شکل می‌دیم.";
 
 const OVERLAY = [
 
@@ -35,10 +36,10 @@ const LEAVES = [
 ];
 
 const SILVER =
-  "bg-linear-to-b from-white via-[#dfe3ea] to-[#8f98a8] bg-clip-text text-transparent";
+  "bg-linear-to-b from-white via-[#dfe3ea] to-[#8f98a8] bg-clip-text text-transparent [html[data-theme='light']_&]:bg-linear-to-b [html[data-theme='light']_&]:from-[#20251B] [html[data-theme='light']_&]:via-[#46503B] [html[data-theme='light']_&]:to-[#78816D]";
 
 const LIME =
-  "text-[var(--color-primary)] [text-shadow:0_0_30px_color-mix(in_srgb,var(--color-primary)_50%,transparent)]";
+  "text-[var(--color-primary)] [text-shadow:0_0_30px_color-mix(in_srgb,var(--color-primary)_50%,transparent)] [html[data-theme='light']_&]:[text-shadow:none]";
 
 export default function Hero() {
   const root = useRef(null);
@@ -316,7 +317,7 @@ export default function Hero() {
     <section
       ref={root}
       dir="rtl"
-      className="relative flex h-screen min-h-[640px] w-full select-none items-center justify-center overflow-x-clip pb-20 pt-24"
+      className="relative flex h-screen min-h-[640px] w-full select-none items-center justify-center overflow-x-clip bg-[var(--color-bg)] pb-20 pt-24 text-[var(--color-text)]"
     >
 
       <svg width="0" height="0" className="absolute" aria-hidden="true">
@@ -330,17 +331,18 @@ export default function Hero() {
 
   
       <img
-        src="./neon.png"
+        src="/neon.png"
         alt=""
         aria-hidden="true"
         draggable={false}
-        className="pointer-events-none absolute z-0 max-w-none opacity-55 mask-b-from-2
+        className="pointer-events-none absolute z-1 max-w-none opacity-55 mask-b-from-2
                    left-0 top-[10%] w-[200vw]
-                   md:left-1/2 md:top-2/12 md:w-1/4 md:-translate-x-1/2 md:scale-380"
+                   md:left-1/2 md:top-2/12 md:w-1/4 md:-translate-x-1/2 md:scale-380
+                   [html[data-theme='light']_&]:opacity-15 [html[data-theme='light']_&]:saturate-50"
       />
 
       <div
-        className="pointer-events-none absolute inset-0 z-[1]"
+        className="pointer-events-none absolute inset-0 z-[1] [html[data-theme='light']_&]:opacity-0"
         style={{ backgroundImage: OVERLAY }}
       />
 
@@ -348,7 +350,7 @@ export default function Hero() {
         hero-ring pointer-events-none absolute inset-0 z-[1]
         m-auto hidden h-[80%] w-[min(78vw,1250px)]
         rounded-[50%] border border-[var(--color-primary)]/10
-        opacity-0 md:block
+        opacity-0 [html[data-theme='light']_&]:border-[var(--color-primary)]/15 md:block
       " />
 
       {LEAVES.map((l, i) => (
@@ -358,7 +360,7 @@ export default function Hero() {
           viewBox="0 0 64 32"
           aria-hidden="true"
           className={
-            "hero-leaf pointer-events-none absolute z-[2] opacity-0 drop-shadow-[0_0_10px_rgba(173,255,47,0.45)] " +
+            "hero-leaf pointer-events-none absolute z-[2] opacity-0 drop-shadow-[0_0_10px_rgba(173,255,47,0.45)] [html[data-theme='light']_&]:drop-shadow-none " +
             (i > 0 ? "hidden md:block" : "")
           }
           style={{ left: l.x, top: l.y, width: l.w }}
@@ -396,6 +398,7 @@ export default function Hero() {
             h-px w-8 bg-linear-to-r from-transparent
             to-[var(--color-primary)]
             shadow-[0_0_10px_var(--color-primary)]
+            [html[data-theme='light']_&]:shadow-none
             sm:w-12 md:w-56
           " />
 
@@ -404,6 +407,7 @@ export default function Hero() {
               hero-brand-glow pointer-events-none absolute
               -inset-x-5 -inset-y-2 rounded-full
               bg-[var(--color-primary)] opacity-20 blur-2xl
+              [html[data-theme='light']_&]:hidden
             " />
 
             <span className="
@@ -413,6 +417,7 @@ export default function Hero() {
               pl-[0.4em] font-michroma
               text-lg tracking-[0.35em]
               text-transparent drop-shadow-[0_0_14px_rgba(173,255,47,0.55)]
+              [html[data-theme='light']_&]:drop-shadow-none
               sm:text-xl md:text-4xl
             ">
               SIRYX
@@ -423,6 +428,7 @@ export default function Hero() {
             h-px w-8 bg-linear-to-l from-transparent
             to-[var(--color-primary)]
             shadow-[0_0_10px_var(--color-primary)]
+            [html[data-theme='light']_&]:shadow-none
             sm:w-12 md:w-56
           " />
         </div>
@@ -523,6 +529,7 @@ export default function Hero() {
         <p className="
           hero-fade max-w-[min(92vw,32rem)]
           text-sm leading-7 text-white/85
+          [html[data-theme='light']_&]:text-[var(--color-muted)]
           opacity-0
           sm:text-base sm:leading-8
           md:text-lg
@@ -537,21 +544,22 @@ export default function Hero() {
           sm:flex-row sm:gap-6
           md:gap-8
         ">
-          <button
-            type="button"
+          <Link
+            href="/about"
             className="
               group flex items-center gap-2
               text-xs text-[var(--color-text)]
+              transition-colors hover:text-[var(--color-primary)]
               sm:gap-3 sm:text-sm
             "
           >
-            <span>ویدیو معرفی</span>
+            <span>آشنایی با ما</span>
 
             <span className="
               grid size-10 place-items-center
               rounded-full border border-[var(--color-border)]
               bg-[var(--color-secondary)]/60
-              backdrop-blur transition
+              transition
               group-hover:border-[var(--color-primary)]
               group-hover:shadow-[0_0_20px_var(--color-glow)]
               sm:size-12
@@ -559,16 +567,20 @@ export default function Hero() {
               <svg
                 viewBox="0 0 24 24"
                 className="size-3.5 sm:size-4"
-                fill="currentColor"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 aria-hidden="true"
               >
-                <path d="M8 5v14l11-7z" />
+                <path d="M7 17 17 7M8 7h9v9" />
               </svg>
             </span>
-          </button>
+          </Link>
 
-          <a
-            href="#projects"
+          <Link
+            href="/projects"
             className="
               group flex items-center gap-2
               rounded-full border border-[var(--color-primary)]
@@ -601,8 +613,8 @@ export default function Hero() {
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>
 
-            <span>مشاهده پروژه‌ها</span>
-          </a>
+            <span>دیدن کارهامون</span>
+          </Link>
         </div>
       </div>
     </section>

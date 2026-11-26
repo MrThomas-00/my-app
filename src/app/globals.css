@@ -13,20 +13,21 @@
   --color-glow: rgba(173, 255, 47, 0.14);
   --color-on-primary: #090B10;
 }
-
 :root[data-theme='light'] {
   color-scheme: light;
-  --color-primary: #5F9B00;
-  --color-bg: #F6F8FB;
-  --color-secondary: #EDF0F5;
-  --color-surface: #FFFFFF;
-  --color-border: #DCE1EA;
-  --color-text: #0E1218;
-  --color-muted: #5B6575;
-  --color-glow: rgba(95, 155, 0, 0.16);
-  --color-on-primary: #090B10;
-}
 
+  --color-primary: #668F19;
+  --color-bg: #F1F0EB;
+  --color-secondary: #E7E5DD;
+  --color-surface: #FAFAF7;
+  --color-border: #D5D3C9;
+
+  --color-text: #20251B;
+  --color-muted: #69715F;
+
+  --color-glow: rgba(102, 143, 25, 0.15);
+  --color-on-primary: #FFFFFF;
+}
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -55,6 +56,9 @@ body {
   .font-vazirmatn {
     font-family: var(--font-vazirmatn-var), "Vazirmatn", sans-serif;
   }
+  .font-pioneer {
+    font-family: var(--font-pioneer), sans-serif;
+  }
 }
 
 body::before,
@@ -66,22 +70,7 @@ body::after {
   pointer-events: none;
 }
 
-/* نور گوشه‌ی بالا سمت راست */
-body::before {
-  background: radial-gradient(60% 50% at 100% 0%, var(--color-glow), transparent);
-}
 
-/* شبکه‌ی محو */
-body::after {
-  background-image:
-    linear-gradient(var(--color-border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
-  background-size: 64px 64px;
-  opacity: 0.5;
-  -webkit-mask-image: radial-gradient(ellipse at top, black, transparent 70%);
-  mask-image: radial-gradient(ellipse at top, black, transparent 70%);
-}
-/* اسکرول‌بار: باریک، گرد و لیمویی */
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;
